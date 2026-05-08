@@ -4,7 +4,7 @@
 TBD - created by archiving change sdd-monitor. Update Purpose after archive.
 ## Requirements
 ### Requirement: Persistir métricas en SQLite
-El sistema SHALL almacenar cada métrica recolectada en una base de datos SQLite local. El archivo de base de datos SHALL ser configurable vía variable de entorno.
+El sistema SHALL almacenar cada métrica recolectada en una base de datos SQLite local. El archivo de base de datos SHALL ser configurable vía variable de entorno. La conexión SQLite SHALL crearse y cerrarse dentro del mismo hilo que ejecuta la inserción, nunca compartirse entre hilos.
 
 #### Scenario: Almacenamiento exitoso de métricas
 - **WHEN** el processor entrega un conjunto de métricas normalizadas al storage
@@ -17,6 +17,10 @@ El sistema SHALL almacenar cada métrica recolectada en una base de datos SQLite
 #### Scenario: Base de datos ya existente
 - **WHEN** la aplicación inicia y ya existe una base de datos con el esquema correcto
 - **THEN** el storage SHALL conectarse y agregar nuevos registros sin modificar los existentes
+
+#### Scenario: Conexión creada y cerrada en el mismo hilo
+- **WHEN** el ciclo de polling se ejecuta en un hilo secundario
+- **THEN** la conexión SQLite SHALL abrirse y cerrarse dentro de ese mismo hilo, sin reutilizar conexiones creadas en otros hilos
 
 ### Requirement: Consultar métricas almacenadas
 El sistema SHALL permitir recuperar métricas almacenadas filtradas por dispositivo y rango de tiempo.

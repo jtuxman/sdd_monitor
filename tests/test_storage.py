@@ -73,3 +73,48 @@ def test_insert_multiple_records(storage):
     storage.insert(records)
     results = storage.query_by_device("router")
     assert len(results) == 5
+
+
+# ── query_recent ───────────────────────────────────────────────────────────────
+
+def _record_ts(device, oid, value, hour):
+    return MetricRecord(
+        device_name=device,
+        oid=oid,
+        raw_value=value,
+        timestamp_utc=datetime(2024, 1, 1, hour, 0, 0, tzinfo=timezone.utc),
+    )
+
+
+def test_query_recent_returns_oldest_first(storage):
+    oid = "1.3.6.1.2.1.1.3.0"
+    storage.insert([
+        _record_ts("router", oid, "10", 10),
+        _record_ts("router", oid, "20", 11),
+        _record_ts("router", oid, "30", 12),
+    ])
+    results = storage.query_recent("router", oid)
+    assert [r.raw_value for r in results] == ["10", "20", "30"]
+
+
+def test_query_recent_respects_limit(storage):
+    oid = "1.3.6.1.2.1.1.3.0"
+    storage.insert([_record_ts("router", oid, str(i), i) for i in range(10)])
+    results = storage.query_recent("router", oid, n=3)
+    assert len(results) == 3
+    assert results[-1].raw_value == "9"
+
+
+def test_query_recent_empty(storage):
+    results = storage.query_recent("nonexistent", "1.3.6.1.2.1.1.3.0")
+    assert results == []
+
+
+def test_query_recent_only_matching_oid(storage):
+    storage.insert([
+        _record_ts("router", "1.3.6.1.2.1.1.1.0", "desc", 10),
+        _record_ts("router", "1.3.6.1.2.1.1.3.0", "42", 10),
+    ])
+    results = storage.query_recent("router", "1.3.6.1.2.1.1.3.0")
+    assert len(results) == 1
+    assert results[0].raw_value == "42"

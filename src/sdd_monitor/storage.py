@@ -54,6 +54,28 @@ class Storage:
             )
         return results
 
+    def query_recent(self, device_name: str, oid: str, n: int = 20) -> list[MetricRecord]:
+        cursor = self._conn.execute(
+            "SELECT device_name, oid, value, timestamp_utc FROM metrics "
+            "WHERE device_name = ? AND oid = ? "
+            "ORDER BY timestamp_utc DESC LIMIT ?",
+            (device_name, oid, n),
+        )
+        results = []
+        for row in cursor.fetchall():
+            results.append(
+                MetricRecord(
+                    device_name=row[0],
+                    oid=row[1],
+                    raw_value=row[2],
+                    timestamp_utc=datetime.fromisoformat(row[3]).replace(
+                        tzinfo=timezone.utc
+                    ),
+                )
+            )
+        results.reverse()
+        return results
+
     def close(self) -> None:
         self._conn.close()
 

@@ -8,3 +8,4 @@ class MetricRecord:
     oid: str
     raw_value: str
     timestamp_utc: datetime
+    label: str | None = None

@@ -17,9 +17,10 @@ logging.basicConfig(
 def main() -> None:
     config_path = Path("config/devices.yaml")
     db_path = Path(os.getenv("DB_PATH", "data/metrics.db"))
+    html_path = Path(os.getenv("HTML_PATH", "data/report.html"))
     interval = int(os.getenv("POLL_INTERVAL", "60"))
 
-    scheduler.run(config_path, db_path, interval)
+    scheduler.run(config_path, db_path, html_path, interval)
 
 
 if __name__ == "__main__":

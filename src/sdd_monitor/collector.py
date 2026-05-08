@@ -26,6 +26,12 @@ logger = logging.getLogger(__name__)
 _REQUIRED_FIELDS = {"name", "host", "snmp_version", "oids"}
 
 
+def _normalize_oid(raw: str | dict) -> tuple[str, str | None]:
+    if isinstance(raw, str):
+        return raw, None
+    return raw["oid"], raw.get("label")
+
+
 def load_devices(config_path: str | Path) -> list[dict[str, Any]]:
     path = Path(config_path)
     if not path.exists():
@@ -44,6 +50,10 @@ def load_devices(config_path: str | Path) -> list[dict[str, Any]]:
             raise ValueError(
                 f"Dispositivo '{device.get('name', '?')}' falta campos: {missing}"
             )
+        device["oids"] = [
+            {"oid": oid, "label": label}
+            for oid, label in (_normalize_oid(o) for o in device["oids"])
+        ]
     return devices
 
 
@@ -103,7 +113,8 @@ async def _collect_async(devices: list[dict[str, Any]]) -> list[MetricRecord]:
             logger.error("Error configurando dispositivo '%s': %s", name, exc)
             continue
 
-        for oid in device["oids"]:
+        for oid_entry in device["oids"]:
+            oid, label = _normalize_oid(oid_entry) if isinstance(oid_entry, str) else (oid_entry["oid"], oid_entry.get("label"))
             try:
                 raw = await _query_oid(engine, auth, transport, oid)
             except Exception as exc:
@@ -119,6 +130,7 @@ async def _collect_async(devices: list[dict[str, Any]]) -> list[MetricRecord]:
                         oid=oid,
                         raw_value=raw,
                         timestamp_utc=datetime.now(timezone.utc),
+                        label=label,
                     )
                 )
     return records
