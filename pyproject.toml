@@ -7,7 +7,7 @@ name = "sdd-monitor"
 version = "0.1.0"
 requires-python = ">=3.10"
 dependencies = [
-    "pysnmp-lextudio>=6",
+    "pysnmp>=7",
     "rich>=13",
     "APScheduler>=3.10,<4",
     "pyyaml>=6",

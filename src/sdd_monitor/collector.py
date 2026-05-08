@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 from datetime import datetime, timezone
@@ -5,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pysnmp.hlapi import (
+from pysnmp.hlapi.v3arch.asyncio import (
     CommunityData,
     ContextData,
     ObjectIdentity,
@@ -61,14 +62,14 @@ def _make_auth(device: dict[str, Any]) -> CommunityData | UsmUserData:
     raise ValueError(f"Versión SNMP no soportada: {version}")
 
 
-def _query_oid(
+async def _query_oid(
     engine: SnmpEngine,
     auth: CommunityData | UsmUserData,
     transport: UdpTransportTarget,
     oid: str,
 ) -> str | None:
-    error_indication, error_status, error_index, var_binds = next(
-        getCmd(engine, auth, transport, ContextData(), ObjectType(ObjectIdentity(oid)))
+    error_indication, error_status, error_index, var_binds = await getCmd(
+        engine, auth, transport, ContextData(), ObjectType(ObjectIdentity(oid))
     )
     if error_indication:
         logger.warning("Error SNMP para OID %s: %s", oid, error_indication)
@@ -85,7 +86,7 @@ def _query_oid(
     return value.prettyPrint()
 
 
-def collect(devices: list[dict[str, Any]]) -> list[MetricRecord]:
+async def _collect_async(devices: list[dict[str, Any]]) -> list[MetricRecord]:
     records: list[MetricRecord] = []
     engine = SnmpEngine()
 
@@ -93,7 +94,7 @@ def collect(devices: list[dict[str, Any]]) -> list[MetricRecord]:
         name = device["name"]
         try:
             auth = _make_auth(device)
-            transport = UdpTransportTarget(
+            transport = await UdpTransportTarget.create(
                 (device["host"], device.get("port", 161)),
                 timeout=device.get("timeout", 2),
                 retries=device.get("retries", 1),
@@ -104,7 +105,7 @@ def collect(devices: list[dict[str, Any]]) -> list[MetricRecord]:
 
         for oid in device["oids"]:
             try:
-                raw = _query_oid(engine, auth, transport, oid)
+                raw = await _query_oid(engine, auth, transport, oid)
             except Exception as exc:
                 logger.error(
                     "Error inesperado en dispositivo '%s' OID %s: %s", name, oid, exc
@@ -121,3 +122,7 @@ def collect(devices: list[dict[str, Any]]) -> list[MetricRecord]:
                     )
                 )
     return records
+
+
+def collect(devices: list[dict[str, Any]]) -> list[MetricRecord]:
+    return asyncio.run(_collect_async(devices))
