@@ -26,6 +26,12 @@
 - [x] 4.2 Actualizar firma de `scheduler.run()` para recibir `html_path: Path`
 - [x] 4.3 Llamar a `html_report.generate()` al final de `_poll_cycle`, después de `presentation.render()`
 
+## 6. Formateo de Uptime
+
+- [x] 6.1 Agregar función `_format_uptime(centiseconds: str) -> str` en `html_report.py` que convierta centisegundos a formato `Xd Xh Xm`
+- [x] 6.2 En `_build_device_card`, detectar si `label` contiene "uptime" (case-insensitive) y mostrar el valor formateado en lugar del crudo
+- [x] 6.3 Excluir OIDs con label "uptime" de la generación de gráficas
+
 ## 5. Tests
 
 - [x] 5.1 Añadir test para `collector.load_devices` con OIDs como strings, como objetos y mezclados

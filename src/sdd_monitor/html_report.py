@@ -129,6 +129,21 @@ def _is_numeric(value: str) -> bool:
         return False
 
 
+def _is_uptime_label(label: str | None) -> bool:
+    return bool(label and "uptime" in label.lower())
+
+
+def _format_uptime(centiseconds: str) -> str:
+    try:
+        total_seconds = int(centiseconds) // 100
+        days = total_seconds // 86400
+        hours = (total_seconds % 86400) // 3600
+        minutes = (total_seconds % 3600) // 60
+        return f"{days}d {hours}h {minutes}m"
+    except (ValueError, TypeError):
+        return centiseconds
+
+
 def _build_html(
     now_str: str,
     poll_interval: int,
@@ -174,15 +189,17 @@ def _build_device_card(
 
     for record in records:
         label = record.label or record.oid
+        is_uptime = _is_uptime_label(record.label)
+        display_value = _format_uptime(record.raw_value) if is_uptime else record.raw_value
         rows += (
             f"        <tr>"
             f"<td>{_html.escape(label)}</td>"
-            f"<td class='val'>{_html.escape(record.raw_value)}</td>"
+            f"<td class='val'>{_html.escape(display_value)}</td>"
             f"<td class='ts'>{record.timestamp_utc.strftime('%H:%M:%S')} UTC</td>"
             f"</tr>\n"
         )
 
-        if _is_numeric(record.raw_value):
+        if not is_uptime and _is_numeric(record.raw_value):
             history = history_map.get((device_name, record.oid), [])
             if len(history) >= 2:
                 chart_id = _safe_id(f"chart-{device_name}-{record.oid}")

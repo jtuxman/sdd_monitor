@@ -22,6 +22,10 @@ El HTML generado SHALL incluir una sección por cada dispositivo configurado con
 - **WHEN** el HTML es abierto en un browser
 - **THEN** SHALL mostrar el nombre del dispositivo, su icono, y para cada OID: la etiqueta legible (o el OID crudo si no hay label), el valor actual y la marca de tiempo UTC del último registro
 
+#### Scenario: OID de uptime muestra tiempo legible
+- **WHEN** el label de un OID contiene "uptime" (case-insensitive)
+- **THEN** el sistema SHALL convertir el valor de centisegundos a formato legible (Xd Xh Xm) en lugar del número crudo
+
 #### Scenario: Dispositivo sin métricas en el último poll
 - **WHEN** un dispositivo no retornó métricas en el ciclo más reciente
 - **THEN** el HTML SHALL mostrar el dispositivo con un indicador de error o sin datos, sin omitir la tarjeta del dispositivo
@@ -40,6 +44,10 @@ El HTML generado SHALL incluir una gráfica de línea por cada OID numérico, mo
 #### Scenario: OID no numérico
 - **WHEN** el valor de un OID no es convertible a número (ej. sysDescr es texto)
 - **THEN** el HTML SHALL mostrar el valor como texto sin intentar renderizar gráfica
+
+#### Scenario: OID de uptime no muestra gráfica
+- **WHEN** el label de un OID contiene "uptime" (case-insensitive)
+- **THEN** el HTML SHALL mostrar solo el valor formateado como texto sin renderizar gráfica de historial
 
 ### Requirement: Auto-refresh de la página
 El HTML generado SHALL incluir un mecanismo de recarga automática del browser alineado con el intervalo de polling configurado.
