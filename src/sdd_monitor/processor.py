@@ -35,6 +35,7 @@ def process(records: list[MetricRecord]) -> list[MetricRecord]:
                 oid=record.oid,
                 raw_value=normalized,
                 timestamp_utc=record.timestamp_utc,
+                label=record.label,
             )
         )
     return result
