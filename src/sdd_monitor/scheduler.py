@@ -13,12 +13,13 @@ logger = logging.getLogger(__name__)
 _shutdown_event = threading.Event()
 
 
-def _poll_cycle(devices: list[dict], storage: Storage) -> None:
+def _poll_cycle(devices: list[dict], db_path: Path) -> None:
     try:
         raw = collector.collect(devices)
         metrics = processor.process(raw)
-        if metrics:
-            storage.insert(metrics)
+        with Storage(db_path) as storage:
+            if metrics:
+                storage.insert(metrics)
         presentation.render(metrics)
     except Exception as exc:
         logger.error("Error en ciclo de polling: %s", exc)
@@ -26,8 +27,7 @@ def _poll_cycle(devices: list[dict], storage: Storage) -> None:
 
 def run(config_path: str | Path, db_path: str | Path, interval: int) -> None:
     devices = collector.load_devices(config_path)
-
-    storage = Storage(db_path)
+    db_path = Path(db_path)
 
     def handle_signal(signum: int, _frame: object) -> None:
         logger.info("Señal %s recibida, deteniendo scheduler...", signum)
@@ -42,7 +42,7 @@ def run(config_path: str | Path, db_path: str | Path, interval: int) -> None:
         _poll_cycle,
         "interval",
         seconds=interval,
-        args=[devices, storage],
+        args=[devices, db_path],
         next_run_time=__import__("datetime").datetime.now(),
         max_instances=1,
         coalesce=True,
@@ -58,5 +58,4 @@ def run(config_path: str | Path, db_path: str | Path, interval: int) -> None:
     except (KeyboardInterrupt, SystemExit):
         pass
     finally:
-        storage.close()
         logger.info("SDD Monitor detenido.")
