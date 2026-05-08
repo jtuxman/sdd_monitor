@@ -14,7 +14,7 @@ from pysnmp.hlapi.v3arch.asyncio import (
     SnmpEngine,
     UdpTransportTarget,
     UsmUserData,
-    getCmd,
+    get_cmd,
     usmAesCfb128Protocol,
     usmHMACSHAAuthProtocol,
 )
@@ -68,7 +68,7 @@ async def _query_oid(
     transport: UdpTransportTarget,
     oid: str,
 ) -> str | None:
-    error_indication, error_status, error_index, var_binds = await getCmd(
+    error_indication, error_status, error_index, var_binds = await get_cmd(
         engine, auth, transport, ContextData(), ObjectType(ObjectIdentity(oid))
     )
     if error_indication:
