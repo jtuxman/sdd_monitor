@@ -11,7 +11,7 @@ devices:
       - 1.3.6.1.2.1.1.1.0        # sysDescr: descripción del sistema
       - 1.3.6.1.2.1.1.3.0        # sysUpTime: tiempo de actividad
       - 1.3.6.1.2.1.2.1.0        # ifNumber: número de interfaces
-      - 1.3.6.1.4.1.9.9.109.1.1.1.1.8.1  # cpmCPUTotal5minRev: promedio carga CPU 5 minutos (%)
+      - 1.3.6.1.4.1.9.9.109.1.1.1.1.8.19  # cpmCPUTotal5minRev: promedio carga CPU 5 minutos (%) - CPU index 19
   # Ejemplo dispositivo SNMP v3 (credenciales desde variables de entorno)
 #  - name: switch-core
 #    host: 192.168.1.2
