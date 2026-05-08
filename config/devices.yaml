@@ -1,7 +1,7 @@
 devices:
   # Ejemplo dispositivo SNMP v2c
   - name: router-principal
-    host: 192.168.1.1
+    host: 132.248.237.130
     port: 161               # Puerto SNMP (por defecto 161)
     snmp_version: 2c
     community: public       # Community string de solo lectura
@@ -14,7 +14,7 @@ devices:
 
   # Ejemplo dispositivo SNMP v3 (credenciales desde variables de entorno)
   - name: switch-core
-    host: 192.168.1.2
+    host: 172.16.0.1
     port: 161
     snmp_version: 3
     timeout: 2
