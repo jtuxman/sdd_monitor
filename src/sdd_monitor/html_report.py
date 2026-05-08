@@ -231,7 +231,7 @@ def _build_charts_js(all_charts: list[dict]) -> str:
             f"}}]}},"
             f"options:{{"
             f"responsive:true,maintainAspectRatio:false,"
-            f"plugins:{{legend:{{display:false}}}},"
+            f"plugins:{{legend:{{display:false}},title:{{display:true,text:{json.dumps(c['label'])},color:'#94a3b8',font:{{size:11}}}}}},"
             f"scales:{{"
             f"x:{{ticks:{{color:'#94a3b8',maxTicksLimit:6}},grid:{{color:'rgba(51,65,85,0.4)'}}}},"
             f"y:{{ticks:{{color:'#94a3b8'}},grid:{{color:'rgba(51,65,85,0.4)'}},beginAtZero:false}}"
