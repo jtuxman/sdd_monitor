@@ -67,6 +67,24 @@ devices:
         label: CPU 5min %
       - oid: 1.3.6.1.4.1.9.9.109.1.1.1.1.8.20
         label: CPU 5min % (módulo 2)
+  - name: switch-Merino
+    type: switch                 # switch | router | server | firewall
+    host: 172.16.0.86
+    port: 161
+    snmp_version: 2c
+    community: Morelos
+    timeout: 2
+    retries: 1
+    oids:
+      - oid: 1.3.6.1.2.1.1.1.0
+        label: Descripción
+      - oid: 1.3.6.1.2.1.1.3.0
+        label: Uptime
+#      - oid: 1.3.6.1.2.1.2.1.0
+#        label: Interfaces
+      - oid: 1.3.6.1.4.1.9.9.109.1.1.1.1.8.1
+        label: CPU 5min %
+
 #      - oid: 1.3.6.1.2.1.2.1.0
 #        label: Interfaces
 
