@@ -33,7 +33,7 @@ devices:
 #        label: Interfaces
       - oid: 1.3.6.1.4.1.9.9.109.1.1.1.1.8.1
         label: CPU 5min %
-    - name: switch-norte-APs
+  - name: switch-core-APs
     type: switch                 # switch | router | server | firewall
     host: 172.16.0.86
     port: 161

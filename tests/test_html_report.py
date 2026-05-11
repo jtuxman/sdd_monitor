@@ -55,12 +55,13 @@ def test_generate_html_contains_meta_refresh(tmp_path):
 
 
 def test_generate_html_contains_chart_canvas_for_numeric_oid(tmp_path):
+    from datetime import timedelta
     db = tmp_path / "metrics.db"
     html_path = tmp_path / "report.html"
-    # Insert history so chart renders
+    now = datetime.now(timezone.utc)
     with Storage(db) as s:
         s.insert([
-            MetricRecord("switch-core", "1.3.6.1.4.1.9.9.109.1.1.1.1.8.1", str(i), datetime(2024, 1, 1, i, 0, 0, tzinfo=timezone.utc))
+            MetricRecord("switch-core", "1.3.6.1.4.1.9.9.109.1.1.1.1.8.1", str(i * 10), now - timedelta(minutes=i * 5))
             for i in range(3)
         ])
     generate([_record()], _devices(), db, html_path, poll_interval=60)

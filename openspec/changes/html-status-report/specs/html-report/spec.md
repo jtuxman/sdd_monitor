@@ -30,16 +30,30 @@ El HTML generado SHALL incluir una sección por cada dispositivo configurado con
 - **WHEN** un dispositivo no retornó métricas en el ciclo más reciente
 - **THEN** el HTML SHALL mostrar el dispositivo con un indicador de error o sin datos, sin omitir la tarjeta del dispositivo
 
-### Requirement: Mostrar historial de métricas con gráfica
-El HTML generado SHALL incluir una gráfica de línea por cada OID numérico, mostrando los últimos 20 registros históricos obtenidos desde el almacenamiento SQLite.
+### Requirement: Mostrar historial de métricas con gráfica y selector de rango
+El HTML generado SHALL incluir una gráfica de línea por cada OID numérico con un selector de rango temporal (`1h`, `1d`, `3d`, `7d`) que cambia los datos mostrados sin recargar la página. Los datos de cada rango SHALL consultarse desde SQLite y agregarse por bucket de tiempo antes de embeberse en el HTML.
+
+Los buckets de agregación son:
+- **1h**: datos crudos (bucket de 1 minuto)
+- **1d**: promedio por bucket de 15 minutos
+- **3d**: promedio por bucket de 1 hora
+- **7d**: promedio por bucket de 4 horas
 
 #### Scenario: Gráfica con historial disponible
-- **WHEN** existen 2 o más registros históricos para un OID de un dispositivo
-- **THEN** el HTML SHALL renderizar una gráfica de línea con Chart.js mostrando los valores en el eje Y y las marcas de tiempo en el eje X
+- **WHEN** existen 2 o más registros históricos para un OID de un dispositivo en el rango activo
+- **THEN** el HTML SHALL renderizar una gráfica de línea con Chart.js mostrando valores en el eje Y y marcas de tiempo en el eje X
+
+#### Scenario: Cambio de rango temporal
+- **WHEN** el usuario hace clic en un botón de rango (1h, 1d, 3d, 7d) sobre una gráfica
+- **THEN** la gráfica SHALL actualizar sus datos sin recargar la página, marcando el botón seleccionado como activo
+
+#### Scenario: Rango sin datos suficientes
+- **WHEN** un rango no tiene 2 o más registros en SQLite
+- **THEN** la gráfica SHALL mostrarse vacía para ese rango sin producir error
 
 #### Scenario: OID sin historial suficiente
-- **WHEN** existe menos de 2 registros históricos para un OID
-- **THEN** el HTML SHALL mostrar el valor actual sin gráfica, o una gráfica con un solo punto
+- **WHEN** ningún rango tiene datos suficientes para un OID
+- **THEN** el HTML SHALL mostrar el valor actual sin gráfica
 
 #### Scenario: OID no numérico
 - **WHEN** el valor de un OID no es convertible a número (ej. sysDescr es texto)

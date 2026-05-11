@@ -118,3 +118,73 @@ def test_query_recent_only_matching_oid(storage):
     results = storage.query_recent("router", "1.3.6.1.2.1.1.3.0")
     assert len(results) == 1
     assert results[0].raw_value == "42"
+
+
+# ── query_timerange ────────────────────────────────────────────────────────────
+
+def test_query_timerange_returns_records_in_range(tmp_path):
+    from datetime import timedelta
+    db = tmp_path / "metrics.db"
+    oid = "1.3.6.1.4.1.9.9.109.1.1.1.1.8.1"
+    now = datetime.now(timezone.utc)
+    with Storage(db) as s:
+        s.insert([
+            MetricRecord("sw", oid, "10", now - timedelta(minutes=30)),
+            MetricRecord("sw", oid, "20", now - timedelta(minutes=90)),  # fuera de 1h
+        ])
+        results = s.query_timerange("sw", oid, hours=1)
+    assert len(results) == 1
+    assert results[0].raw_value == "10"
+
+
+def test_query_timerange_empty(tmp_path):
+    db = tmp_path / "metrics.db"
+    with Storage(db) as s:
+        results = s.query_timerange("sw", "1.3.6.1.2.1.1.1.0", hours=24)
+    assert results == []
+
+
+def test_query_timerange_ordered_asc(tmp_path):
+    from datetime import timedelta
+    db = tmp_path / "metrics.db"
+    oid = "1.3.6.1.4.1.9.9.109.1.1.1.1.8.1"
+    now = datetime.now(timezone.utc)
+    with Storage(db) as s:
+        s.insert([
+            MetricRecord("sw", oid, "30", now - timedelta(minutes=10)),
+            MetricRecord("sw", oid, "10", now - timedelta(minutes=30)),
+            MetricRecord("sw", oid, "20", now - timedelta(minutes=20)),
+        ])
+        results = s.query_timerange("sw", oid, hours=1)
+    assert [r.raw_value for r in results] == ["10", "20", "30"]
+
+
+# ── _aggregate ─────────────────────────────────────────────────────────────────
+
+def test_aggregate_empty():
+    from sdd_monitor.html_report import _aggregate
+    labels, data = _aggregate([], bucket_minutes=15)
+    assert labels == [] and data == []
+
+
+def test_aggregate_averages_bucket():
+    from sdd_monitor.html_report import _aggregate
+    from datetime import timedelta
+    now = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+    records = [
+        MetricRecord("sw", "oid", "10", now),
+        MetricRecord("sw", "oid", "20", now + timedelta(minutes=5)),
+        MetricRecord("sw", "oid", "90", now + timedelta(minutes=20)),
+    ]
+    labels, data = _aggregate(records, bucket_minutes=15)
+    assert len(data) == 2
+    assert data[0] == 15.0  # promedio de 10 y 20
+    assert data[1] == 90.0
+
+
+def test_aggregate_skips_non_numeric():
+    from sdd_monitor.html_report import _aggregate
+    now = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+    records = [MetricRecord("sw", "oid", "texto", now)]
+    labels, data = _aggregate(records, bucket_minutes=1)
+    assert labels == [] and data == []

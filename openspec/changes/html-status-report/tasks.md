@@ -32,6 +32,18 @@
 - [x] 6.2 En `_build_device_card`, detectar si `label` contiene "uptime" (case-insensitive) y mostrar el valor formateado en lugar del crudo
 - [x] 6.3 Excluir OIDs con label "uptime" de la generación de gráficas
 
+## 7. Selector de rango temporal en gráficas
+
+- [x] 7.1 Añadir `query_timerange(device_name: str, oid: str, hours: int) -> list[MetricRecord]` en `storage.py`
+- [x] 7.2 Añadir `_aggregate(records, bucket_minutes) -> tuple[list[str], list[float]]` en `html_report.py` que agrupe registros en buckets y calcule promedio por bucket
+- [x] 7.3 Definir `_RANGES = [("1h",1,1), ("1d",24,15), ("3d",72,60), ("7d",168,240)]` en `html_report.py`
+- [x] 7.4 Actualizar `generate()` para consultar los 4 rangos por OID numérico usando `query_timerange` + `_aggregate` y construir `range_data`
+- [x] 7.5 Actualizar `_build_device_card` para recibir `range_data` en lugar de `history_map` y generar botones de rango encima de cada canvas
+- [x] 7.6 Actualizar `_build_charts_js` para embeber `window._chartData` con los 4 datasets por gráfica e inicializar con rango `1h`
+- [x] 7.7 Añadir handler JS para los botones que actualice Chart.js sin recargar
+- [x] 7.8 Añadir CSS para los botones de rango (`.time-btn`, `.time-selector`, `.chart-header`)
+- [x] 7.9 Añadir tests para `Storage.query_timerange` y `_aggregate`
+
 ## 5. Tests
 
 - [x] 5.1 Añadir test para `collector.load_devices` con OIDs como strings, como objetos y mezclados

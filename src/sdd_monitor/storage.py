@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from sdd_monitor.models import MetricRecord
@@ -74,6 +74,28 @@ class Storage:
                 )
             )
         results.reverse()
+        return results
+
+    def query_timerange(self, device_name: str, oid: str, hours: int) -> list[MetricRecord]:
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+        cursor = self._conn.execute(
+            "SELECT device_name, oid, value, timestamp_utc FROM metrics "
+            "WHERE device_name = ? AND oid = ? AND timestamp_utc >= ? "
+            "ORDER BY timestamp_utc ASC",
+            (device_name, oid, cutoff),
+        )
+        results = []
+        for row in cursor.fetchall():
+            results.append(
+                MetricRecord(
+                    device_name=row[0],
+                    oid=row[1],
+                    raw_value=row[2],
+                    timestamp_utc=datetime.fromisoformat(row[3]).replace(
+                        tzinfo=timezone.utc
+                    ),
+                )
+            )
         return results
 
     def close(self) -> None:

@@ -11,7 +11,13 @@ from sdd_monitor.storage import Storage
 
 logger = logging.getLogger(__name__)
 
-N_HISTORY = 20
+# (range_id, hours_back, bucket_minutes)
+_RANGES = [
+    ("1h",   1,   1),
+    ("1d",  24,  15),
+    ("3d",  72,  60),
+    ("7d", 168, 240),
+]
 
 _ICONS: dict[str, str] = {
     "switch": "🔀",
@@ -105,16 +111,37 @@ h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
 .val { color: var(--accent); font-family: 'Menlo','Monaco',monospace; font-weight: 500; }
 .ts  { color: var(--muted); font-size: 0.78rem; }
 .chart-block { margin-top: 1.25rem; }
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+}
 .chart-label {
     color: var(--muted);
     font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    margin-bottom: 0.4rem;
 }
+.time-selector { display: flex; gap: 0.25rem; }
+.time-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 4px;
+    padding: 0.15rem 0.45rem;
+    font-size: 0.68rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+}
+.time-btn:hover { border-color: var(--accent); color: var(--accent); }
+.time-btn.active { background: rgba(6,182,212,0.15); border-color: var(--accent); color: var(--accent); font-weight: 600; }
 .chart-wrap { position: relative; height: 150px; }
 """
+
+_RANGE_LABELS = [r for r, _, _ in _RANGES]
 
 
 def _safe_id(s: str) -> str:
@@ -144,12 +171,34 @@ def _format_uptime(centiseconds: str) -> str:
         return centiseconds
 
 
-def _build_html(
-    now_str: str,
-    poll_interval: int,
-    device_cards: str,
-    charts_js: str,
-) -> str:
+def _aggregate(
+    records: list[MetricRecord], bucket_minutes: int
+) -> tuple[list[str], list[float]]:
+    if not records:
+        return [], []
+
+    buckets: dict[int, list[float]] = defaultdict(list)
+    for r in records:
+        try:
+            val = float(r.raw_value)
+        except (ValueError, TypeError):
+            continue
+        key = int(r.timestamp_utc.timestamp()) // (bucket_minutes * 60)
+        buckets[key].append(val)
+
+    if not buckets:
+        return [], []
+
+    fmt = "%H:%M" if bucket_minutes < 60 else ("%m/%d %H:%M" if bucket_minutes < 1440 else "%m/%d")
+    labels, data = [], []
+    for key in sorted(buckets):
+        ts = datetime.fromtimestamp(key * bucket_minutes * 60, tz=timezone.utc)
+        labels.append(ts.strftime(fmt))
+        data.append(round(sum(buckets[key]) / len(buckets[key]), 2))
+    return labels, data
+
+
+def _build_html(now_str: str, poll_interval: int, device_cards: str, charts_js: str) -> str:
     return f"""<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -180,7 +229,7 @@ def _build_device_card(
     device_name: str,
     device_type: str | None,
     records: list[MetricRecord],
-    history_map: dict[tuple[str, str], list[MetricRecord]],
+    range_data: dict[tuple[str, str], dict[str, tuple[list, list]]],
 ) -> tuple[str, list[dict]]:
     icon = _ICONS.get(device_type or "", _DEFAULT_ICON)
     rows = ""
@@ -199,19 +248,34 @@ def _build_device_card(
             f"</tr>\n"
         )
 
-        if not is_uptime and _is_numeric(record.raw_value):
-            history = history_map.get((device_name, record.oid), [])
-            if len(history) >= 2:
-                chart_id = _safe_id(f"chart-{device_name}-{record.oid}")
-                labels = [r.timestamp_utc.strftime("%H:%M") for r in history]
-                data = [float(r.raw_value) for r in history]
-                charts_data.append({"id": chart_id, "labels": labels, "data": data, "label": label})
-                chart_blocks += (
-                    f'      <div class="chart-block">'
-                    f'<div class="chart-label">{_html.escape(label)}</div>'
-                    f'<div class="chart-wrap"><canvas id="{chart_id}"></canvas></div>'
-                    f"</div>\n"
-                )
+        if is_uptime or not _is_numeric(record.raw_value):
+            continue
+
+        key = (device_name, record.oid)
+        ranges = range_data.get(key, {})
+        has_data = any(len(d) >= 2 for _, d in ranges.values())
+        if not has_data:
+            continue
+
+        chart_id = _safe_id(f"chart-{device_name}-{record.oid}")
+        charts_data.append({"id": chart_id, "label": label, "ranges": {
+            r: {"labels": lbs, "data": dt} for r, (lbs, dt) in ranges.items()
+        }})
+
+        btns = "".join(
+            f'<button class="time-btn{" active" if r == "1h" else ""}" '
+            f'data-chart-id="{chart_id}" data-range="{r}">{r}</button>'
+            for r in _RANGE_LABELS
+        )
+        chart_blocks += (
+            f'      <div class="chart-block">\n'
+            f'        <div class="chart-header">'
+            f'<span class="chart-label">{_html.escape(label)}</span>'
+            f'<div class="time-selector">{btns}</div>'
+            f"</div>\n"
+            f'        <div class="chart-wrap"><canvas id="{chart_id}"></canvas></div>\n'
+            f"      </div>\n"
+        )
 
     card = (
         f'    <section class="device-card">\n'
@@ -232,30 +296,58 @@ def _build_device_card(
 def _build_charts_js(all_charts: list[dict]) -> str:
     if not all_charts:
         return ""
-    parts = ["<script>"]
-    for c in all_charts:
-        parts.append(
-            f"new Chart(document.getElementById({json.dumps(c['id'])}),{{"
-            f"type:'line',"
-            f"data:{{"
-            f"labels:{json.dumps(c['labels'])},"
-            f"datasets:[{{"
-            f"data:{json.dumps(c['data'])},"
-            f"label:{json.dumps(c['label'])},"
-            f"borderColor:'#06b6d4',"
-            f"backgroundColor:'rgba(6,182,212,0.08)',"
-            f"borderWidth:2,pointRadius:3,tension:0.35,fill:true"
-            f"}}]}},"
-            f"options:{{"
-            f"responsive:true,maintainAspectRatio:false,"
-            f"plugins:{{legend:{{display:false}},title:{{display:true,text:{json.dumps(c['label'])},color:'#94a3b8',font:{{size:11}}}}}},"
-            f"scales:{{"
-            f"x:{{ticks:{{color:'#94a3b8',maxTicksLimit:6}},grid:{{color:'rgba(51,65,85,0.4)'}}}},"
-            f"y:{{ticks:{{color:'#94a3b8'}},grid:{{color:'rgba(51,65,85,0.4)'}},beginAtZero:false}}"
-            f"}}}}}})"
-        )
-    parts.append("</script>")
-    return "\n".join(parts)
+
+    chart_data_js = json.dumps({c["id"]: c["ranges"] for c in all_charts})
+    chart_meta_js = json.dumps({c["id"]: c["label"] for c in all_charts})
+    chart_opts = (
+        "{"
+        "responsive:true,maintainAspectRatio:false,"
+        "plugins:{legend:{display:false},"
+        "title:{display:true,color:'#94a3b8',font:{size:11}}},"
+        "scales:{"
+        "x:{ticks:{color:'#94a3b8',maxTicksLimit:8},grid:{color:'rgba(51,65,85,0.4)'}},"
+        "y:{ticks:{color:'#94a3b8'},grid:{color:'rgba(51,65,85,0.4)'},beginAtZero:false}"
+        "}}"
+    )
+
+    return f"""<script>
+(function(){{
+  var _data={chart_data_js};
+  var _meta={chart_meta_js};
+  var _charts={{}};
+  for(var id in _data){{
+    var el=document.getElementById(id);
+    if(!el)continue;
+    var d=_data[id]["1h"]||{{labels:[],data:[]}};
+    var opts=JSON.parse(JSON.stringify({chart_opts}));
+    opts.plugins.title.text=_meta[id];
+    _charts[id]=new Chart(el,{{
+      type:'line',
+      data:{{labels:d.labels,datasets:[{{
+        data:d.data,
+        borderColor:'#06b6d4',
+        backgroundColor:'rgba(6,182,212,0.08)',
+        borderWidth:2,pointRadius:3,tension:0.35,fill:true
+      }}]}},
+      options:opts
+    }});
+  }}
+  document.querySelectorAll('.time-btn').forEach(function(btn){{
+    btn.addEventListener('click',function(){{
+      var id=this.dataset.chartId;
+      var range=this.dataset.range;
+      var chart=_charts[id];
+      if(!chart)return;
+      var d=(_data[id]&&_data[id][range])||{{labels:[],data:[]}};
+      chart.data.labels=d.labels;
+      chart.data.datasets[0].data=d.data;
+      chart.update();
+      this.closest('.time-selector').querySelectorAll('.time-btn').forEach(function(b){{b.classList.remove('active');}});
+      this.classList.add('active');
+    }});
+  }});
+}})();
+</script>"""
 
 
 def generate(
@@ -272,21 +364,24 @@ def generate(
         for r in metrics:
             by_device[r.device_name].append(r)
 
-        history_map: dict[tuple[str, str], list[MetricRecord]] = {}
+        range_data: dict[tuple[str, str], dict[str, tuple[list, list]]] = {}
         with Storage(db_path) as storage:
             for device_name, records in by_device.items():
                 for record in records:
+                    if _is_uptime_label(record.label) or not _is_numeric(record.raw_value):
+                        continue
                     key = (device_name, record.oid)
-                    history_map[key] = storage.query_recent(device_name, record.oid, N_HISTORY)
+                    range_data[key] = {}
+                    for range_id, hours, bucket_mins in _RANGES:
+                        raw = storage.query_timerange(device_name, record.oid, hours)
+                        lbs, dt = _aggregate(raw, bucket_mins)
+                        range_data[key][range_id] = (lbs, dt)
 
         device_cards = ""
         all_charts: list[dict] = []
         for device_name, records in by_device.items():
             card, charts = _build_device_card(
-                device_name,
-                type_map.get(device_name),
-                records,
-                history_map,
+                device_name, type_map.get(device_name), records, range_data
             )
             device_cards += card
             all_charts.extend(charts)
