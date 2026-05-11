@@ -98,10 +98,10 @@ async def _query_oid(
 
 async def _collect_async(devices: list[dict[str, Any]]) -> list[MetricRecord]:
     records: list[MetricRecord] = []
-    engine = SnmpEngine()
 
     for device in devices:
         name = device["name"]
+        engine = SnmpEngine()
         try:
             auth = _make_auth(device)
             transport = await UdpTransportTarget.create(
