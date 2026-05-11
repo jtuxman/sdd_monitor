@@ -69,7 +69,7 @@ devices:
         label: CPU 5min % (módulo 2)
   - name: switch-Merino
     type: switch                 # switch | router | server | firewall
-    host: 172.16.0.86
+    host: 172.16.0.19
     port: 161
     snmp_version: 2c
     community: Morelos
@@ -129,7 +129,7 @@ devices:
         label: CPU 5min %
   - name: switch-TercerNivelSur
     type: switch                 # switch | router | server | firewall
-    host: 172.16.0.86
+    host: 172.16.0.52
     port: 161
     snmp_version: 2c
     community: Morelos
