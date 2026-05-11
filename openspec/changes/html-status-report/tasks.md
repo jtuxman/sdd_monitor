@@ -44,6 +44,16 @@
 - [x] 7.8 Añadir CSS para los botones de rango (`.time-btn`, `.time-selector`, `.chart-header`)
 - [x] 7.9 Añadir tests para `Storage.query_timerange` y `_aggregate`
 
+## 8. Zona horaria y tarjetas de error
+
+- [x] 8.1 Usar UTC-6 fijo (`timezone(timedelta(hours=-6))`) para todos los timestamps de display en `html_report.py` (header, tabla, eje X de gráficas)
+- [x] 8.2 Modificar `_query_oid` para retornar `tuple[str | None, str | None]` (valor, mensaje de error)
+- [x] 8.3 Modificar `_collect_async` y `collect()` para retornar `tuple[list[MetricRecord], dict[str, str]]` con el mapa `device_name → error`
+- [x] 8.4 Actualizar `scheduler._poll_cycle` para desempaquetar errores y pasarlos a `presentation.render()` y `html_report.generate()`
+- [x] 8.5 Actualizar `html_report.generate()` para recibir `errors` y generar tarjeta de error por dispositivo sin respuesta
+- [x] 8.6 Implementar `_build_error_card(device_name, device_type, error_msg)` con borde rojo en el HTML
+- [x] 8.7 Actualizar tests de `collector` y `html_report` para el nuevo tipo de retorno
+
 ## 5. Tests
 
 - [x] 5.1 Añadir test para `collector.load_devices` con OIDs como strings, como objetos y mezclados

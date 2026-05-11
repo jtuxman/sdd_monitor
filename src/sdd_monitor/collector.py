@@ -77,27 +77,28 @@ async def _query_oid(
     auth: CommunityData | UsmUserData,
     transport: UdpTransportTarget,
     oid: str,
-) -> str | None:
+) -> tuple[str | None, str | None]:
+    """Returns (value, error_msg). One of them is always None."""
     error_indication, error_status, error_index, var_binds = await get_cmd(
         engine, auth, transport, ContextData(), ObjectType(ObjectIdentity(oid))
     )
     if error_indication:
-        logger.warning("Error SNMP para OID %s: %s", oid, error_indication)
-        return None
+        msg = str(error_indication)
+        logger.warning("Error SNMP para OID %s: %s", oid, msg)
+        return None, msg
     if error_status:
-        logger.warning(
-            "OID %s no encontrado: %s at %s",
-            oid,
-            error_status.prettyPrint(),
-            error_index,
-        )
-        return None
+        msg = error_status.prettyPrint()
+        logger.warning("OID %s no encontrado: %s at %s", oid, msg, error_index)
+        return None, msg
     _, value = var_binds[0]
-    return value.prettyPrint()
+    return value.prettyPrint(), None
 
 
-async def _collect_async(devices: list[dict[str, Any]]) -> list[MetricRecord]:
+async def _collect_async(
+    devices: list[dict[str, Any]],
+) -> tuple[list[MetricRecord], dict[str, str]]:
     records: list[MetricRecord] = []
+    errors: dict[str, str] = {}
 
     for device in devices:
         name = device["name"]
@@ -111,16 +112,23 @@ async def _collect_async(devices: list[dict[str, Any]]) -> list[MetricRecord]:
             )
         except Exception as exc:
             logger.error("Error configurando dispositivo '%s': %s", name, exc)
+            errors[name] = str(exc)
             continue
 
+        device_start = len(records)
+        last_error: str | None = None
+
         for oid_entry in device["oids"]:
-            oid, label = _normalize_oid(oid_entry) if isinstance(oid_entry, str) else (oid_entry["oid"], oid_entry.get("label"))
+            oid, label = (
+                _normalize_oid(oid_entry)
+                if isinstance(oid_entry, str)
+                else (oid_entry["oid"], oid_entry.get("label"))
+            )
             try:
-                raw = await _query_oid(engine, auth, transport, oid)
+                raw, err = await _query_oid(engine, auth, transport, oid)
             except Exception as exc:
-                logger.error(
-                    "Error inesperado en dispositivo '%s' OID %s: %s", name, oid, exc
-                )
+                last_error = str(exc)
+                logger.error("Error inesperado en '%s' OID %s: %s", name, oid, exc)
                 continue
 
             if raw is not None:
@@ -133,8 +141,16 @@ async def _collect_async(devices: list[dict[str, Any]]) -> list[MetricRecord]:
                         label=label,
                     )
                 )
-    return records
+            elif err and last_error is None:
+                last_error = err
+
+        if len(records) == device_start and last_error:
+            errors[name] = last_error
+
+    return records, errors
 
 
-def collect(devices: list[dict[str, Any]]) -> list[MetricRecord]:
+def collect(
+    devices: list[dict[str, Any]],
+) -> tuple[list[MetricRecord], dict[str, str]]:
     return asyncio.run(_collect_async(devices))

@@ -132,11 +132,12 @@ def test_collect_v2c_success(mock_get_cmd, mock_transport_cls):
     mock_transport_cls.create = AsyncMock(return_value=MagicMock())
     mock_get_cmd.return_value = _snmp_ok("Linux router 5.15")
 
-    records = collect(_devices())
+    records, errors = collect(_devices())
     assert len(records) == 1
     assert records[0].device_name == "router"
     assert records[0].raw_value == "Linux router 5.15"
     assert records[0].oid == "1.3.6.1.2.1.1.1.0"
+    assert errors == {}
 
 
 # ── manejo de timeout ──────────────────────────────────────────────────────────
@@ -147,8 +148,9 @@ def test_collect_device_timeout(mock_get_cmd, mock_transport_cls):
     mock_transport_cls.create = AsyncMock(return_value=MagicMock())
     mock_get_cmd.return_value = ("No SNMP response received", None, None, [])
 
-    records = collect(_devices())
+    records, errors = collect(_devices())
     assert records == []
+    assert "router" in errors
 
 
 # ── OID no encontrado ──────────────────────────────────────────────────────────
@@ -161,8 +163,9 @@ def test_collect_oid_not_found(mock_get_cmd, mock_transport_cls):
     error_status.prettyPrint.return_value = "noSuchObject"
     mock_get_cmd.return_value = (None, error_status, 0, [])
 
-    records = collect(_devices(oids=[{"oid": "1.3.6.1.99.99.99.0", "label": None}]))
+    records, errors = collect(_devices(oids=[{"oid": "1.3.6.1.99.99.99.0", "label": None}]))
     assert records == []
+    assert "router" in errors
 
 
 # ── un dispositivo falla, los demás continúan ──────────────────────────────────
@@ -186,6 +189,8 @@ def test_collect_one_device_fails_others_continue(mock_get_cmd, mock_transport_c
         {"name": "good", "host": "10.0.0.2", "snmp_version": "2c", "community": "public",
          "oids": [{"oid": "1.3.6.1.2.1.1.1.0", "label": None}]},
     ]
-    records = collect(devices)
+    records, errors = collect(devices)
     assert len(records) == 1
     assert records[0].device_name == "good"
+    assert "bad" in errors
+    assert "good" not in errors

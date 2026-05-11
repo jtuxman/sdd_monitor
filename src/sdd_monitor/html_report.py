@@ -3,13 +3,15 @@ import json
 import logging
 import re
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from sdd_monitor.models import MetricRecord
 from sdd_monitor.storage import Storage
 
 logger = logging.getLogger(__name__)
+
+_TZ_MX = timezone(timedelta(hours=-6))
 
 # (range_id, hours_back, bucket_minutes)
 _RANGES = [
@@ -139,6 +141,26 @@ h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
 .time-btn:hover { border-color: var(--accent); color: var(--accent); }
 .time-btn.active { background: rgba(6,182,212,0.15); border-color: var(--accent); color: var(--accent); font-weight: 600; }
 .chart-wrap { position: relative; height: 150px; }
+.error-card { border-color: #ef4444; }
+.error-card:hover { border-color: #f87171; }
+.error-badge {
+    background: rgba(239,68,68,0.12);
+    color: #ef4444;
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 9999px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-left: auto;
+}
+.error-msg {
+    color: #f87171;
+    font-size: 0.8rem;
+    font-family: 'Menlo','Monaco',monospace;
+    margin-top: 0.5rem;
+    word-break: break-all;
+    line-height: 1.5;
+}
 """
 
 _RANGE_LABELS = [r for r, _, _ in _RANGES]
@@ -192,7 +214,7 @@ def _aggregate(
     fmt = "%H:%M" if bucket_minutes < 60 else ("%m/%d %H:%M" if bucket_minutes < 1440 else "%m/%d")
     labels, data = [], []
     for key in sorted(buckets):
-        ts = datetime.fromtimestamp(key * bucket_minutes * 60, tz=timezone.utc)
+        ts = datetime.fromtimestamp(key * bucket_minutes * 60, tz=_TZ_MX)
         labels.append(ts.strftime(fmt))
         data.append(round(sum(buckets[key]) / len(buckets[key]), 2))
     return labels, data
@@ -225,6 +247,20 @@ def _build_html(now_str: str, poll_interval: int, device_cards: str, charts_js: 
 </html>"""
 
 
+def _build_error_card(device_name: str, device_type: str | None, error_msg: str) -> str:
+    icon = _ICONS.get(device_type or "", _DEFAULT_ICON)
+    return (
+        f'    <section class="device-card error-card">\n'
+        f'      <div class="device-header">'
+        f'<span class="device-icon">{icon}</span>'
+        f'<span class="device-name">{_html.escape(device_name)}</span>'
+        f'<span class="error-badge">Sin respuesta</span>'
+        f"</div>\n"
+        f'      <p class="error-msg">{_html.escape(error_msg)}</p>\n'
+        f"    </section>\n"
+    )
+
+
 def _build_device_card(
     device_name: str,
     device_type: str | None,
@@ -244,7 +280,7 @@ def _build_device_card(
             f"        <tr>"
             f"<td>{_html.escape(label)}</td>"
             f"<td class='val'>{_html.escape(display_value)}</td>"
-            f"<td class='ts'>{record.timestamp_utc.strftime('%H:%M:%S')} UTC</td>"
+            f"<td class='ts'>{record.timestamp_utc.astimezone(_TZ_MX).strftime('%H:%M:%S')} UTC-6</td>"
             f"</tr>\n"
         )
 
@@ -353,10 +389,12 @@ def _build_charts_js(all_charts: list[dict]) -> str:
 def generate(
     metrics: list[MetricRecord],
     devices: list[dict],
+    errors: dict[str, str] | None,
     db_path: Path,
     html_path: Path,
     poll_interval: int,
 ) -> None:
+    errors = errors or {}
     try:
         type_map = {d["name"]: d.get("type") for d in devices}
 
@@ -386,7 +424,10 @@ def generate(
             device_cards += card
             all_charts.extend(charts)
 
-        now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+        for device_name, error_msg in errors.items():
+            device_cards += _build_error_card(device_name, type_map.get(device_name), error_msg)
+
+        now_str = datetime.now(_TZ_MX).strftime("%Y-%m-%d %H:%M:%S UTC-6")
         html_content = _build_html(now_str, poll_interval, device_cards, _build_charts_js(all_charts))
 
         html_path = Path(html_path)

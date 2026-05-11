@@ -15,13 +15,13 @@ _shutdown_event = threading.Event()
 
 def _poll_cycle(devices: list[dict], db_path: Path, html_path: Path, interval: int) -> None:
     try:
-        raw = collector.collect(devices)
+        raw, errors = collector.collect(devices)
         metrics = processor.process(raw)
         with Storage(db_path) as storage:
             if metrics:
                 storage.insert(metrics)
-        presentation.render(metrics)
-        html_report.generate(metrics, devices, db_path, html_path, interval)
+        presentation.render(metrics, errors)
+        html_report.generate(metrics, devices, errors, db_path, html_path, interval)
     except Exception as exc:
         logger.error("Error en ciclo de polling: %s", exc)
 

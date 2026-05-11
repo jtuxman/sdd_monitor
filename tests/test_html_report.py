@@ -33,14 +33,14 @@ def test_generate_creates_html_file(tmp_path):
     db = tmp_path / "metrics.db"
     html_path = tmp_path / "report.html"
     metrics = [_record()]
-    generate(metrics, _devices(), db, html_path, poll_interval=60)
+    generate(metrics, _devices(), {}, db, html_path, poll_interval=60)
     assert html_path.exists()
 
 
 def test_generate_html_contains_device_name(tmp_path):
     db = tmp_path / "metrics.db"
     html_path = tmp_path / "report.html"
-    generate([_record()], _devices(), db, html_path, poll_interval=60)
+    generate([_record()], _devices(), {}, db, html_path, poll_interval=60)
     content = html_path.read_text()
     assert "switch-core" in content
 
@@ -48,7 +48,7 @@ def test_generate_html_contains_device_name(tmp_path):
 def test_generate_html_contains_meta_refresh(tmp_path):
     db = tmp_path / "metrics.db"
     html_path = tmp_path / "report.html"
-    generate([_record()], _devices(), db, html_path, poll_interval=30)
+    generate([_record()], _devices(), {}, db, html_path, poll_interval=30)
     content = html_path.read_text()
     assert 'http-equiv="refresh"' in content
     assert 'content="30"' in content
@@ -64,7 +64,7 @@ def test_generate_html_contains_chart_canvas_for_numeric_oid(tmp_path):
             MetricRecord("switch-core", "1.3.6.1.4.1.9.9.109.1.1.1.1.8.1", str(i * 10), now - timedelta(minutes=i * 5))
             for i in range(3)
         ])
-    generate([_record()], _devices(), db, html_path, poll_interval=60)
+    generate([_record()], _devices(), {}, db, html_path, poll_interval=60)
     content = html_path.read_text()
     assert "<canvas" in content
     assert "Chart" in content
@@ -73,7 +73,7 @@ def test_generate_html_contains_chart_canvas_for_numeric_oid(tmp_path):
 def test_generate_html_shows_device_icon(tmp_path):
     db = tmp_path / "metrics.db"
     html_path = tmp_path / "report.html"
-    generate([_record()], _devices(device_type="switch"), db, html_path, poll_interval=60)
+    generate([_record()], _devices(device_type="switch"), {}, db, html_path, poll_interval=60)
     content = html_path.read_text()
     assert "🔀" in content
 
@@ -92,7 +92,7 @@ def test_generate_no_chart_for_text_oid(tmp_path):
             "oids": [{"oid": "1.3.6.1.2.1.1.1.0", "label": "Descripción"}],
         }
     ]
-    generate(metrics, devices, db, html_path, poll_interval=60)
+    generate(metrics, devices, {}, db, html_path, poll_interval=60)
     content = html_path.read_text()
     assert "<canvas" not in content
 
@@ -100,4 +100,24 @@ def test_generate_no_chart_for_text_oid(tmp_path):
 def test_generate_error_does_not_raise(tmp_path):
     db = tmp_path / "metrics.db"
     bad_path = Path("/nonexistent/path/report.html")
-    generate([_record()], _devices(), db, bad_path, poll_interval=60)
+    generate([_record()], _devices(), {}, db, bad_path, poll_interval=60)
+
+
+def test_generate_shows_error_card_for_unreachable_device(tmp_path):
+    db = tmp_path / "metrics.db"
+    html_path = tmp_path / "report.html"
+    errors = {"switch-core": "No SNMP response received before timeout"}
+    generate([], _devices(), errors, db, html_path, poll_interval=60)
+    content = html_path.read_text()
+    assert "switch-core" in content
+    assert "Sin respuesta" in content
+    assert "No SNMP response received before timeout" in content
+    assert "error-card" in content
+
+
+def test_generate_utc6_timestamp_in_table(tmp_path):
+    db = tmp_path / "metrics.db"
+    html_path = tmp_path / "report.html"
+    generate([_record()], _devices(), {}, db, html_path, poll_interval=60)
+    content = html_path.read_text()
+    assert "UTC-6" in content
