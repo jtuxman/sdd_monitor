@@ -188,3 +188,25 @@ def test_aggregate_skips_non_numeric():
     records = [MetricRecord("sw", "oid", "texto", now)]
     labels, data = _aggregate(records, bucket_minutes=1)
     assert labels == [] and data == []
+
+
+def test_aggregate_fills_full_range_with_start_time():
+    from datetime import timedelta
+    from sdd_monitor.html_report import _aggregate
+    now_utc = datetime.now(timezone.utc)
+    start = now_utc - timedelta(hours=1)
+    records = [MetricRecord("sw", "oid", "42", now_utc - timedelta(minutes=5))]
+    labels, data = _aggregate(records, bucket_minutes=1, start_time=start)
+    assert len(labels) >= 60
+    assert any(v is None for v in data)
+    assert any(v == 42.0 for v in data)
+
+
+def test_aggregate_empty_with_start_time():
+    from datetime import timedelta
+    from sdd_monitor.html_report import _aggregate
+    now_utc = datetime.now(timezone.utc)
+    start = now_utc - timedelta(hours=1)
+    labels, data = _aggregate([], bucket_minutes=1, start_time=start)
+    assert len(labels) >= 60
+    assert all(v is None for v in data)

@@ -64,11 +64,34 @@ Los buckets de agregación son:
 - **THEN** el HTML SHALL mostrar solo el valor formateado como texto sin renderizar gráfica de historial
 
 ### Requirement: Auto-refresh de la página
-El HTML generado SHALL incluir un mecanismo de recarga automática del browser alineado con el intervalo de polling configurado.
+El HTML generado SHALL incluir un mecanismo de recarga automática del browser alineado con el intervalo de polling configurado, que SHALL suspenderse automáticamente cuando el usuario entre en vista de foco.
 
-#### Scenario: Recarga automática activa
-- **WHEN** el HTML es abierto en un browser
+#### Scenario: Recarga automática activa en vista general
+- **WHEN** el HTML es abierto en un browser y el usuario no ha seleccionado ningún dispositivo
 - **THEN** la página SHALL recargarse automáticamente cada `POLL_INTERVAL` segundos via `<meta http-equiv="refresh">`
+
+#### Scenario: Auto-refresh suspendido en vista de foco
+- **WHEN** el usuario entra en la vista de foco de un dispositivo
+- **THEN** el auto-refresh SHALL quedar suspendido para ese dispositivo y el usuario podrá analizar las gráficas sin interrupciones
+
+### Requirement: Vista de foco por dispositivo
+El HTML generado SHALL permitir que el usuario haga click en la tarjeta de cualquier dispositivo para ver solo ese dispositivo en pantalla completa, con el auto-refresh suspendido para análisis sin interrupciones.
+
+#### Scenario: Entrar en vista de foco
+- **WHEN** el usuario hace click en la tarjeta de un dispositivo
+- **THEN** la página SHALL ocultar todas las demás tarjetas de dispositivos, mostrar únicamente la tarjeta del dispositivo seleccionado en modo expandido, suspender el auto-refresh y mostrar un botón de retorno visible
+
+#### Scenario: Retornar a vista general
+- **WHEN** el usuario hace click en el botón de retorno estando en vista de foco
+- **THEN** la página SHALL restaurar la vista general con todas las tarjetas visibles y reactivar el auto-refresh
+
+#### Scenario: Vista de foco persistida por URL hash
+- **WHEN** el usuario entra en vista de foco de un dispositivo
+- **THEN** la URL SHALL actualizarse con un hash (`#<device-name>`) de forma que al recargar manualmente la página se restaure la vista de foco del mismo dispositivo
+
+#### Scenario: Vista de foco al cargar con hash en URL
+- **WHEN** el HTML se carga con un hash en la URL que corresponde a un dispositivo existente
+- **THEN** la página SHALL entrar directamente en vista de foco de ese dispositivo sin mostrar la vista general
 
 ### Requirement: Icono por tipo de dispositivo
 El HTML generado SHALL mostrar un icono distinto por cada dispositivo según el valor del campo `type` definido en `devices.yaml`.

@@ -45,13 +45,13 @@ def test_generate_html_contains_device_name(tmp_path):
     assert "switch-core" in content
 
 
-def test_generate_html_contains_meta_refresh(tmp_path):
+def test_generate_html_auto_refresh_via_js(tmp_path):
     db = tmp_path / "metrics.db"
     html_path = tmp_path / "report.html"
     generate([_record()], _devices(), {}, db, html_path, poll_interval=30)
     content = html_path.read_text()
-    assert 'http-equiv="refresh"' in content
-    assert 'content="30"' in content
+    assert 'setTimeout' in content
+    assert '_pollInterval=30' in content
 
 
 def test_generate_html_contains_chart_canvas_for_numeric_oid(tmp_path):

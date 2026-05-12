@@ -161,6 +161,27 @@ h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
     word-break: break-all;
     line-height: 1.5;
 }
+.device-card { cursor: pointer; }
+#back-btn {
+    display: none;
+    position: fixed;
+    top: 1rem;
+    right: 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    z-index: 100;
+    font-family: inherit;
+    transition: border-color 0.2s, color 0.2s;
+}
+#back-btn:hover { border-color: var(--accent); color: var(--accent); }
+.focus-mode #back-btn { display: block; }
+.focus-mode .device-card { display: none; }
+.focus-mode .device-card.focused { display: block; }
 """
 
 _RANGE_LABELS = [r for r, _, _ in _RANGES]
@@ -194,44 +215,94 @@ def _format_uptime(centiseconds: str) -> str:
 
 
 def _aggregate(
-    records: list[MetricRecord], bucket_minutes: int
-) -> tuple[list[str], list[float]]:
-    if not records:
-        return [], []
-
-    buckets: dict[int, list[float]] = defaultdict(list)
+    records: list[MetricRecord],
+    bucket_minutes: int,
+    start_time: datetime | None = None,
+) -> tuple[list[str], list[float | None]]:
+    buckets: dict[int, list[float]] = {}
     for r in records:
         try:
             val = float(r.raw_value)
         except (ValueError, TypeError):
             continue
         key = int(r.timestamp_utc.timestamp()) // (bucket_minutes * 60)
+        if key not in buckets:
+            buckets[key] = []
         buckets[key].append(val)
 
-    if not buckets:
-        return [], []
+    if start_time is not None:
+        now = datetime.now(timezone.utc)
+        start_key = int(start_time.timestamp()) // (bucket_minutes * 60)
+        end_key = int(now.timestamp()) // (bucket_minutes * 60)
+        all_keys: list[int] = list(range(start_key, end_key + 1))
+    else:
+        if not buckets:
+            return [], []
+        all_keys = sorted(buckets.keys())
 
     fmt = "%H:%M" if bucket_minutes < 60 else ("%m/%d %H:%M" if bucket_minutes < 1440 else "%m/%d")
-    labels, data = [], []
-    for key in sorted(buckets):
+    labels: list[str] = []
+    data: list[float | None] = []
+    for key in all_keys:
         ts = datetime.fromtimestamp(key * bucket_minutes * 60, tz=_TZ_MX)
         labels.append(ts.strftime(fmt))
-        data.append(round(sum(buckets[key]) / len(buckets[key]), 2))
+        if key in buckets:
+            data.append(round(sum(buckets[key]) / len(buckets[key]), 2))
+        else:
+            data.append(None)
     return labels, data
 
 
 def _build_html(now_str: str, poll_interval: int, device_cards: str, charts_js: str) -> str:
+    focus_js = f"""<script>
+(function(){{
+  var _pollInterval={poll_interval};
+  var _focusActive=false;
+  var _timer=null;
+  function reloadPage(){{if(!_focusActive)window.location.reload();}}
+  function startTimer(){{_timer=setTimeout(reloadPage,_pollInterval*1000);}}
+  function enterFocus(name){{
+    _focusActive=true;
+    clearTimeout(_timer);
+    document.body.classList.add('focus-mode');
+    document.querySelectorAll('.device-card').forEach(function(c){{
+      if(c.dataset.device===name)c.classList.add('focused');
+    }});
+    window.location.hash=name;
+  }}
+  function exitFocus(){{
+    _focusActive=false;
+    document.body.classList.remove('focus-mode');
+    document.querySelectorAll('.device-card').forEach(function(c){{c.classList.remove('focused');}});
+    window.location.hash='';
+    startTimer();
+  }}
+  document.querySelectorAll('.device-card').forEach(function(card){{
+    card.addEventListener('click',function(e){{
+      if(e.target.closest('button'))return;
+      if(!_focusActive)enterFocus(card.dataset.device);
+    }});
+  }});
+  document.getElementById('back-btn').addEventListener('click',exitFocus);
+  var hash=window.location.hash.slice(1);
+  if(hash){{
+    var t=document.querySelector('.device-card[data-device="'+hash+'"]');
+    if(t)enterFocus(hash);
+  }}
+  startTimer();
+}})();
+</script>"""
     return f"""<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="refresh" content="{poll_interval}">
   <title>SDD Monitor</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>{_CSS}</style>
 </head>
 <body>
+  <button id="back-btn">← Volver</button>
   <header>
     <div>
       <h1>SDD Monitor</h1>
@@ -243,14 +314,16 @@ def _build_html(now_str: str, poll_interval: int, device_cards: str, charts_js: 
 {device_cards}
   </main>
 {charts_js}
+{focus_js}
 </body>
 </html>"""
 
 
 def _build_error_card(device_name: str, device_type: str | None, error_msg: str) -> str:
     icon = _ICONS.get(device_type or "", _DEFAULT_ICON)
+    safe_name = _html.escape(device_name, quote=True)
     return (
-        f'    <section class="device-card error-card">\n'
+        f'    <section class="device-card error-card" data-device="{safe_name}">\n'
         f'      <div class="device-header">'
         f'<span class="device-icon">{icon}</span>'
         f'<span class="device-name">{_html.escape(device_name)}</span>'
@@ -289,7 +362,7 @@ def _build_device_card(
 
         key = (device_name, record.oid)
         ranges = range_data.get(key, {})
-        has_data = any(len(d) >= 2 for _, d in ranges.values())
+        has_data = any(sum(1 for v in d if v is not None) >= 2 for _, d in ranges.values())
         if not has_data:
             continue
 
@@ -313,8 +386,9 @@ def _build_device_card(
             f"      </div>\n"
         )
 
+    safe_name = _html.escape(device_name, quote=True)
     card = (
-        f'    <section class="device-card">\n'
+        f'    <section class="device-card" data-device="{safe_name}">\n'
         f'      <div class="device-header">'
         f'<span class="device-icon">{icon}</span>'
         f'<span class="device-name">{_html.escape(device_name)}</span>'
@@ -363,7 +437,7 @@ def _build_charts_js(all_charts: list[dict]) -> str:
         data:d.data,
         borderColor:'#06b6d4',
         backgroundColor:'rgba(6,182,212,0.08)',
-        borderWidth:2,pointRadius:3,tension:0.35,fill:true
+        borderWidth:2,pointRadius:3,tension:0.35,fill:true,spanGaps:false
       }}]}},
       options:opts
     }});
@@ -412,7 +486,8 @@ def generate(
                     range_data[key] = {}
                     for range_id, hours, bucket_mins in _RANGES:
                         raw = storage.query_timerange(device_name, record.oid, hours)
-                        lbs, dt = _aggregate(raw, bucket_mins)
+                        start = datetime.now(timezone.utc) - timedelta(hours=hours)
+                        lbs, dt = _aggregate(raw, bucket_mins, start_time=start)
                         range_data[key][range_id] = (lbs, dt)
 
         device_cards = ""

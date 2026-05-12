@@ -54,6 +54,16 @@
 - [x] 8.6 Implementar `_build_error_card(device_name, device_type, error_msg)` con borde rojo en el HTML
 - [x] 8.7 Actualizar tests de `collector` y `html_report` para el nuevo tipo de retorno
 
+## 9. Vista de foco por dispositivo
+
+- [x] 9.1 Reemplazar `<meta http-equiv="refresh">` por un `setTimeout(reloadPage, pollInterval * 1000)` en el JS embebido de `html_report.py`, con una variable `_focusActive` que impide la recarga cuando está en `true`
+- [x] 9.2 Añadir atributo `data-device="<device_name>"` en cada tarjeta de dispositivo generada por `_build_device_card` e `_build_error_card`
+- [x] 9.3 Implementar handler JS `enterFocus(deviceName)` que oculte todas las tarjetas excepto la seleccionada, establezca `_focusActive = true`, cancele el timer con `clearTimeout` y actualice `window.location.hash`
+- [x] 9.4 Implementar handler JS `exitFocus()` que restaure la visibilidad de todas las tarjetas, establezca `_focusActive = false` y reinicie el `setTimeout`
+- [x] 9.5 Añadir un botón de retorno (`← Volver`) que aparezca solo en vista de foco, implementado como elemento fijo en la página y controlado via CSS con clase `.focus-mode` en el `<body>`
+- [x] 9.6 Al cargar la página, leer `window.location.hash` y si corresponde a un dispositivo existente, llamar automáticamente a `enterFocus(deviceName)`
+- [x] 9.7 Añadir CSS para el modo foco: `.focus-mode .device-card { display: none }`, `.focus-mode .device-card.focused { display: block }`, estilos del botón de retorno
+
 ## 5. Tests
 
 - [x] 5.1 Añadir test para `collector.load_devices` con OIDs como strings, como objetos y mezclados

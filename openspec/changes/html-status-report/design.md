@@ -19,7 +19,7 @@ SDD Monitor actualmente persiste métricas en SQLite y las presenta en terminal 
 - Autenticación o control de acceso
 - Alertas o notificaciones
 - Soporte offline (Chart.js requiere CDN)
-- Múltiples archivos HTML o rutas por dispositivo
+- Múltiples archivos HTML o rutas separadas por dispositivo (la vista de foco es JS dentro del único HTML)
 
 ## Decisions
 
@@ -50,6 +50,11 @@ SDD Monitor actualmente persiste métricas en SQLite y las presenta en terminal 
 **Decisión**: Emoji mapeados desde el campo `type`:
 - `switch` → 🔀, `router` → 🌐, `server` → 🖥️, `firewall` → 🔒, default → 📡
 **Razón**: Sin dependencias de imagen, funciona en cualquier browser moderno, fácil de extender.
+
+### 7. Vista de foco por dispositivo — mecanismo de auto-refresh
+**Decisión**: Reemplazar `<meta http-equiv="refresh">` por un `setTimeout` en JavaScript que verifica si hay un dispositivo en foco antes de recargar. Al entrar en foco, se cancela el timer via `clearTimeout`; al salir, se reinicia.
+**Razón**: El `<meta>` no puede cancelarse desde JavaScript una vez insertado en el DOM. Un `setTimeout` JS da el mismo comportamiento en vista general y permite suspender la recarga en vista de foco sin modificar el DOM del `<head>`. El hash en la URL (`#device-name`) persiste el estado de foco entre recargas manuales.
+**Alternativa descartada**: Generar un HTML por dispositivo — añade complejidad de escritura de múltiples archivos y enlaces entre ellos sin beneficio dado que el foco es una operación puramente de presentación.
 
 ## Risks / Trade-offs
 
