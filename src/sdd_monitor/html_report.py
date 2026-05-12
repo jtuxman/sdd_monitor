@@ -183,6 +183,7 @@ h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
 .focus-mode .device-card { display: none; }
 .focus-mode .device-card.focused { display: block; }
 .iface-btn {
+    display: none;
     margin-top: 1rem;
     background: rgba(6,182,212,0.1);
     border: 1px solid var(--accent);
@@ -194,6 +195,7 @@ h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
     font-family: inherit;
     transition: background 0.15s;
 }
+.focus-mode .device-card.focused .iface-btn { display: inline-block; }
 .iface-btn:hover { background: rgba(6,182,212,0.2); }
 .iface-btn:disabled { opacity: 0.5; cursor: wait; }
 .iface-result { margin-top: 1rem; }
