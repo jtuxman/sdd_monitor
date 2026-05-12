@@ -318,7 +318,7 @@ def _build_interfaces_js() -> str:
               +'<td>'+iface.in_gb+'</td>'
               +'<td>'+iface.out_gb+'</td>'
               +'<td class="iface-total">'+iface.total_gb+' GB</td>'
-              +'<td>'+(iface.status==='up'?'\uD83D\uDFE2 up':'\uD83D\uDD34 down')+'</td>'
+              +'<td>'+(iface.status==='up'?'🟢 up':'🔴 down')+'</td>'
               +'</tr>';
           }).join('');
           result.innerHTML='<table class="iface-table"><thead><tr>'
