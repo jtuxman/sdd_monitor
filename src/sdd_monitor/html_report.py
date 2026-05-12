@@ -182,6 +182,45 @@ h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
 .focus-mode #back-btn { display: block; }
 .focus-mode .device-card { display: none; }
 .focus-mode .device-card.focused { display: block; }
+.iface-btn {
+    margin-top: 1rem;
+    background: rgba(6,182,212,0.1);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 0.5rem;
+    padding: 0.4rem 1rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+}
+.iface-btn:hover { background: rgba(6,182,212,0.2); }
+.iface-btn:disabled { opacity: 0.5; cursor: wait; }
+.iface-result { margin-top: 1rem; }
+.iface-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    margin-top: 0.5rem;
+}
+.iface-table th {
+    text-align: left;
+    padding: 0.35rem 0.6rem;
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    border-bottom: 1px solid var(--border);
+}
+.iface-table td {
+    padding: 0.45rem 0.6rem;
+    border-bottom: 1px solid rgba(51,65,85,0.4);
+}
+.iface-table tr:last-child td { border-bottom: none; }
+.iface-total { font-weight: 700; color: var(--accent); font-family: 'Menlo','Monaco',monospace; }
+.iface-table tr.status-down td { color: rgba(239,68,68,0.85); }
+.iface-error { color: #f87171; font-size: 0.82rem; margin-top: 0.5rem; }
 """
 
 _RANGE_LABELS = [r for r, _, _ in _RANGES]
@@ -253,7 +292,52 @@ def _aggregate(
     return labels, data
 
 
-def _build_html(now_str: str, poll_interval: int, device_cards: str, charts_js: str) -> str:
+def _build_interfaces_js() -> str:
+    return """<script>
+(function(){
+  document.querySelectorAll('.iface-btn').forEach(function(btn){
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      var device=btn.dataset.device;
+      var result=btn.parentElement.querySelector('.iface-result');
+      btn.disabled=true;
+      btn.textContent='Cargando\u2026';
+      result.innerHTML='';
+      fetch('/cgi-bin/interfaces.py?device='+encodeURIComponent(device))
+        .then(function(r){return r.json();})
+        .then(function(data){
+          if(data.error){
+            result.innerHTML='<p class="iface-error">Error: '+data.error+'</p>';
+            btn.textContent='\u21ba Reintentar';btn.disabled=false;return;
+          }
+          var rows=data.interfaces.map(function(iface){
+            var cls=iface.status==='down'?' class="status-down"':'';
+            return '<tr'+cls+'>'
+              +'<td>'+iface.name+'</td>'
+              +'<td>'+(iface.alias||'\u2014')+'</td>'
+              +'<td>'+iface.in_gb+'</td>'
+              +'<td>'+iface.out_gb+'</td>'
+              +'<td class="iface-total">'+iface.total_gb+' GB</td>'
+              +'<td>'+(iface.status==='up'?'\uD83D\uDFE2 up':'\uD83D\uDD34 down')+'</td>'
+              +'</tr>';
+          }).join('');
+          result.innerHTML='<table class="iface-table"><thead><tr>'
+            +'<th>Interfaz</th><th>Descripci\u00f3n</th>'
+            +'<th>In (GB)</th><th>Out (GB)</th><th>Total (GB)</th><th>Estado</th>'
+            +'</tr></thead><tbody>'+rows+'</tbody></table>';
+          btn.textContent='\u21ba Actualizar';btn.disabled=false;
+        })
+        .catch(function(err){
+          result.innerHTML='<p class="iface-error">Error de conexi\u00f3n: '+err.message+'</p>';
+          btn.textContent='\u21ba Reintentar';btn.disabled=false;
+        });
+    });
+  });
+})();
+</script>"""
+
+
+def _build_html(now_str: str, poll_interval: int, device_cards: str, charts_js: str, interfaces_js: str = "") -> str:
     focus_js = f"""<script>
 (function(){{
   var _pollInterval={poll_interval};
@@ -314,6 +398,7 @@ def _build_html(now_str: str, poll_interval: int, device_cards: str, charts_js: 
 {device_cards}
   </main>
 {charts_js}
+{interfaces_js}
 {focus_js}
 </body>
 </html>"""
@@ -387,6 +472,12 @@ def _build_device_card(
         )
 
     safe_name = _html.escape(device_name, quote=True)
+    iface_section = ""
+    if device_type == "switch":
+        iface_section = (
+            f'      <button class="iface-btn" data-device="{safe_name}">Ver interfaces</button>\n'
+            f'      <div class="iface-result"></div>\n'
+        )
     card = (
         f'    <section class="device-card" data-device="{safe_name}">\n'
         f'      <div class="device-header">'
@@ -398,6 +489,7 @@ def _build_device_card(
         f"        <tbody>\n{rows}        </tbody>\n"
         f"      </table>\n"
         f"{chart_blocks}"
+        f"{iface_section}"
         f"    </section>\n"
     )
     return card, charts_data
@@ -503,7 +595,11 @@ def generate(
             device_cards += _build_error_card(device_name, type_map.get(device_name), error_msg)
 
         now_str = datetime.now(_TZ_MX).strftime("%Y-%m-%d %H:%M:%S UTC-6")
-        html_content = _build_html(now_str, poll_interval, device_cards, _build_charts_js(all_charts))
+        html_content = _build_html(
+            now_str, poll_interval, device_cards,
+            _build_charts_js(all_charts),
+            _build_interfaces_js(),
+        )
 
         html_path = Path(html_path)
         html_path.parent.mkdir(parents=True, exist_ok=True)
