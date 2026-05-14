@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from sdd_monitor.models import MetricRecord
+from sdd_monitor.models import LivenessRecord, MetricRecord
 from sdd_monitor.storage import Storage
 
 
@@ -210,3 +210,34 @@ def test_aggregate_empty_with_start_time():
     labels, data = _aggregate([], bucket_minutes=1, start_time=start)
     assert len(labels) >= 60
     assert all(v is None for v in data)
+
+
+def test_insert_and_query_latest_liveness(tmp_path):
+    db = tmp_path / "metrics.db"
+    now = datetime.now(timezone.utc)
+    with Storage(db) as s:
+        s.insert_liveness(
+            [
+                LivenessRecord("ap-a", True, 3.1, True, None, now),
+                LivenessRecord("ap-b", False, None, False, "timeout", now),
+            ]
+        )
+        latest = s.query_latest_liveness()
+    assert len(latest) == 2
+    assert latest[0].device_name == "ap-a"
+    assert latest[0].is_up is True
+    assert latest[1].error == "timeout"
+
+
+def test_query_latest_liveness_keeps_most_recent(tmp_path):
+    from datetime import timedelta
+
+    db = tmp_path / "metrics.db"
+    now = datetime.now(timezone.utc)
+    with Storage(db) as s:
+        s.insert_liveness([LivenessRecord("ap-a", True, 2.0, True, None, now - timedelta(minutes=5))])
+        s.insert_liveness([LivenessRecord("ap-a", False, None, False, "down", now)])
+        latest = s.query_latest_liveness()
+    assert len(latest) == 1
+    assert latest[0].is_up is False
+    assert latest[0].error == "down"

@@ -49,6 +49,23 @@ def test_load_devices_missing_required_field(tmp_path):
         load_devices(cfg)
 
 
+def test_load_devices_liveness_only_device(tmp_path):
+    cfg = tmp_path / "devices.yaml"
+    cfg.write_text(textwrap.dedent("""\
+        devices:
+          - name: ap-local-1
+            host: 172.16.0.200
+            ip_local: 172.16.0.200
+            type: ap
+            liveness: true
+            snmp_enabled: false
+    """))
+    devices = load_devices(cfg)
+    assert len(devices) == 1
+    assert devices[0]["name"] == "ap-local-1"
+    assert devices[0]["oids"] == []
+
+
 def test_load_devices_oids_as_strings(tmp_path):
     cfg = tmp_path / "devices.yaml"
     cfg.write_text(textwrap.dedent("""\

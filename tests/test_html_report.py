@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from sdd_monitor.html_report import generate
-from sdd_monitor.models import MetricRecord
+from sdd_monitor.models import LivenessRecord, MetricRecord
 from sdd_monitor.storage import Storage
 
 
@@ -121,3 +121,30 @@ def test_generate_utc6_timestamp_in_table(tmp_path):
     generate([_record()], _devices(), {}, db, html_path, poll_interval=60)
     content = html_path.read_text()
     assert "UTC-6" in content
+
+
+def test_generate_includes_liveness_section(tmp_path):
+    db = tmp_path / "metrics.db"
+    html_path = tmp_path / "report.html"
+    liveness = [
+        LivenessRecord(
+            device_name="ap-1",
+            is_up=True,
+            ping_rtt_ms=2.4,
+            https_up=True,
+            error=None,
+            timestamp_utc=datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+        )
+    ]
+    generate([_record()], _devices(), {}, db, html_path, poll_interval=60, liveness=liveness)
+    content = html_path.read_text()
+    assert "Liveness AP" in content
+    assert "ap-1" in content
+
+
+def test_generate_liveness_empty_message(tmp_path):
+    db = tmp_path / "metrics.db"
+    html_path = tmp_path / "report.html"
+    generate([_record()], _devices(), {}, db, html_path, poll_interval=60, liveness=[])
+    content = html_path.read_text()
+    assert "Sin datos de liveness AP." in content

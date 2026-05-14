@@ -23,7 +23,7 @@ from sdd_monitor.models import MetricRecord
 
 logger = logging.getLogger(__name__)
 
-_REQUIRED_FIELDS = {"name", "host", "snmp_version", "oids"}
+_REQUIRED_FIELDS = {"name", "host"}
 
 
 def _normalize_oid(raw: str | dict) -> tuple[str, str | None]:
@@ -50,6 +50,15 @@ def load_devices(config_path: str | Path) -> list[dict[str, Any]]:
             raise ValueError(
                 f"Dispositivo '{device.get('name', '?')}' falta campos: {missing}"
             )
+        if not device.get("snmp_enabled", True):
+            device["oids"] = []
+            continue
+
+        for required in ("snmp_version", "oids"):
+            if required not in device:
+                raise ValueError(
+                    f"Dispositivo '{device.get('name', '?')}' falta campos: {{{required!r}}}"
+                )
         device["oids"] = [
             {"oid": oid, "label": label}
             for oid, label in (_normalize_oid(o) for o in device["oids"])
@@ -101,6 +110,8 @@ async def _collect_async(
     errors: dict[str, str] = {}
 
     for device in devices:
+        if not device.get("snmp_enabled", True) or not device.get("oids"):
+            continue
         name = device["name"]
         engine = SnmpEngine()
         try:

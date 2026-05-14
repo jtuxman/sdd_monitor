@@ -6,7 +6,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from sdd_monitor.models import MetricRecord
+from sdd_monitor.models import LivenessRecord, MetricRecord
 from sdd_monitor.storage import Storage
 
 logger = logging.getLogger(__name__)
@@ -223,6 +223,20 @@ h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
 .iface-total { font-weight: 700; color: var(--accent); font-family: 'Menlo','Monaco',monospace; }
 .iface-table tr.status-down td { color: rgba(239,68,68,0.85); }
 .iface-error { color: #f87171; font-size: 0.82rem; margin-top: 0.5rem; }
+.liveness-card { margin-top: 1.5rem; }
+.liveness-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+}
+.liveness-table th, .liveness-table td {
+    padding: 0.45rem 0.6rem;
+    border-bottom: 1px solid rgba(51,65,85,0.4);
+    text-align: left;
+}
+.status-up { color: #22c55e; font-weight: 600; }
+.status-down { color: #ef4444; font-weight: 600; }
+.muted-note { color: var(--muted); font-size: 0.82rem; }
 """
 
 _RANGE_LABELS = [r for r, _, _ in _RANGES]
@@ -343,7 +357,53 @@ def _build_interfaces_js() -> str:
 </script>"""
 
 
-def _build_html(now_str: str, poll_interval: int, device_cards: str, charts_js: str, interfaces_js: str = "") -> str:
+def _build_liveness_card(liveness: list[LivenessRecord]) -> str:
+    if not liveness:
+        return (
+            '  <section class="device-card liveness-card">\n'
+            '    <div class="device-header"><span class="device-name">Liveness AP</span></div>\n'
+            '    <p class="muted-note">Sin datos de liveness AP.</p>\n'
+            "  </section>\n"
+        )
+
+    rows = ""
+    for row in sorted(liveness, key=lambda x: x.device_name.lower()):
+        status_cls = "status-up" if row.is_up else "status-down"
+        status_label = "UP" if row.is_up else "DOWN"
+        https_label = "UP" if row.https_up else "DOWN"
+        rtt = f"{row.ping_rtt_ms:.2f}" if row.ping_rtt_ms is not None else "-"
+        err = _html.escape(row.error or "-")
+        ts = row.timestamp_utc.astimezone(_TZ_MX).strftime("%H:%M:%S")
+        rows += (
+            "<tr>"
+            f"<td>{_html.escape(row.device_name)}</td>"
+            f"<td class='{status_cls}'>{status_label}</td>"
+            f"<td>{rtt}</td>"
+            f"<td>{https_label}</td>"
+            f"<td>{ts} UTC-6</td>"
+            f"<td>{err}</td>"
+            "</tr>\n"
+        )
+
+    return (
+        '  <section class="device-card liveness-card">\n'
+        '    <div class="device-header"><span class="device-name">Liveness AP</span></div>\n'
+        '    <table class="liveness-table">\n'
+        "      <thead><tr><th>Dispositivo</th><th>Estado</th><th>RTT (ms)</th><th>HTTPS 443</th><th>Timestamp</th><th>Error</th></tr></thead>\n"
+        f"      <tbody>\n{rows}      </tbody>\n"
+        "    </table>\n"
+        "  </section>\n"
+    )
+
+
+def _build_html(
+    now_str: str,
+    poll_interval: int,
+    device_cards: str,
+    charts_js: str,
+    interfaces_js: str = "",
+    liveness_cards: str = "",
+) -> str:
     focus_js = f"""<script>
 (function(){{
   var _pollInterval={poll_interval};
@@ -409,6 +469,7 @@ def _build_html(now_str: str, poll_interval: int, device_cards: str, charts_js: 
   <main class="devices-grid">
 {device_cards}
   </main>
+{liveness_cards}
 {charts_js}
 {interfaces_js}
 {focus_js}
@@ -571,8 +632,10 @@ def generate(
     db_path: Path,
     html_path: Path,
     poll_interval: int,
+    liveness: list[LivenessRecord] | None = None,
 ) -> None:
     errors = errors or {}
+    liveness = liveness or []
     try:
         type_map = {d["name"]: d.get("type") for d in devices}
 
@@ -611,6 +674,7 @@ def generate(
             now_str, poll_interval, device_cards,
             _build_charts_js(all_charts),
             _build_interfaces_js(),
+            _build_liveness_card(liveness),
         )
 
         html_path = Path(html_path)

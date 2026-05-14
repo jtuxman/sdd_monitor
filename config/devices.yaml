@@ -2,6 +2,7 @@ devices:
   - name: switch-core-SUR
     type: switch                 # switch | router | server | firewall
     host: 172.16.0.1
+    ip_local: 172.16.0.1
     port: 161
     snmp_version: 2c
     community: Morelos
@@ -19,6 +20,7 @@ devices:
   - name: switch-core-NORTE
     type: switch                 # switch | router | server | firewall
     host: 172.16.0.5
+    ip_local: 172.16.0.5
     port: 161
     snmp_version: 2c
     community: Morelos
@@ -35,7 +37,9 @@ devices:
         label: CPU 5min %
   - name: switch-core-APs
     type: switch                 # switch | router | server | firewall
+    liveness: true               # habilita chequeo local ping + https
     host: 172.16.0.86
+    ip_local: 172.16.0.86
     port: 161
     snmp_version: 2c
     community: Morelos
@@ -53,6 +57,7 @@ devices:
   - name: switch-core-ESTE
     type: switch                 # switch | router | server | firewall
     host: 172.16.0.3
+    ip_local: 172.16.0.3
     port: 161
     snmp_version: 2c
     community: Morelos
@@ -70,6 +75,7 @@ devices:
   - name: switch-Administracion
     type: switch                 # switch | router | server | firewall
     host: 172.16.0.16
+    ip_local: 172.16.0.16
     port: 161
     snmp_version: 2c
     community: Morelos
@@ -85,6 +91,7 @@ devices:
   - name: switch-Direccion
     type: switch                 # switch | router | server | firewall
     host: 172.16.0.30
+    ip_local: 172.16.0.30
     port: 161
     snmp_version: 2c
     community: Morelos
@@ -100,6 +107,7 @@ devices:
   - name: switch-Auditorio
     type: switch                 # switch | router | server | firewall
     host: 172.16.0.45
+    ip_local: 172.16.0.45
     port: 161
     snmp_version: 2c
     community: Morelos
@@ -115,6 +123,7 @@ devices:
   - name: switch-TercerNivelSur
     type: switch                 # switch | router | server | firewall
     host: 172.16.0.52
+    ip_local: 172.16.0.52
     port: 161
     snmp_version: 2c
     community: Morelos
@@ -130,6 +139,7 @@ devices:
   - name: switch-Merino
     type: switch                 # switch | router | server | firewall
     host: 172.16.0.19
+    ip_local: 172.16.0.19
     port: 161
     snmp_version: 2c
     community: Morelos
@@ -159,3 +169,400 @@ devices:
 #        label: tráfico entrada iface 1
 #      - oid: 1.3.6.1.2.1.2.2.1.16.1
 #        label: tráfico salida iface 1
+
+  - name: "ES4-Pasillo 2"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.148
+    ip_local: 172.16.0.148
+    liveness: true
+    snmp_enabled: false
+  - name: "ES1-Auditorio-2"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.155
+    ip_local: 172.16.0.155
+    liveness: true
+    snmp_enabled: false
+  - name: "EA-Dirección"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.131
+    ip_local: 172.16.0.131
+    liveness: true
+    snmp_enabled: false
+  - name: "ES3-Salón de Descanso"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.117
+    ip_local: 172.16.0.117
+    liveness: true
+    snmp_enabled: false
+  - name: "ES4-LIMPI2"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.142
+    ip_local: 172.16.0.142
+    liveness: true
+    snmp_enabled: false
+  - name: "ES2-Espin/Merino"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.152
+    ip_local: 172.16.0.152
+    liveness: true
+    snmp_enabled: false
+  - name: "ES4-Bioinformatica"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.161
+    ip_local: 172.16.0.161
+    liveness: true
+    snmp_enabled: false
+  - name: "ES1-Alagon"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.149
+    ip_local: 172.16.0.149
+    liveness: true
+    snmp_enabled: false
+  - name: "ES4-LIMPI3"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.143
+    ip_local: 172.16.0.143
+    liveness: true
+    snmp_enabled: false
+  - name: "ES2-Dr. Galindo / Dr. Ramírez 2"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.133
+    ip_local: 172.16.0.133
+    liveness: true
+    snmp_enabled: false
+  - name: "ES4-Sala de Juntas"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.144
+    ip_local: 172.16.0.144
+    liveness: true
+    snmp_enabled: false
+  - name: "ES4-LIMPI1-1"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.141
+    ip_local: 172.16.0.141
+    liveness: true
+    snmp_enabled: false
+  - name: "EA-Servicios Generales"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.129
+    ip_local: 172.16.0.129
+    liveness: true
+    snmp_enabled: false
+  - name: "Bioterio"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.162
+    ip_local: 172.16.0.162
+    liveness: true
+    snmp_enabled: false
+  - name: "ES4-Pasillo 1"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.147
+    ip_local: 172.16.0.147
+    liveness: true
+    snmp_enabled: false
+  - name: "EA-Aula Magna"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.130
+    ip_local: 172.16.0.130
+    liveness: true
+    snmp_enabled: false
+  - name: "ES2-Bolivar-EXPossani"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.150
+    ip_local: 172.16.0.150
+    liveness: true
+    snmp_enabled: false
+  - name: "EA-Oficina Dr. Bolivar"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.158
+    ip_local: 172.16.0.158
+    liveness: true
+    snmp_enabled: false
+  - name: "EA-Administración-Christian"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.118
+    ip_local: 172.16.0.118
+    liveness: true
+    snmp_enabled: false
+  - name: "ES1-L. Covarrubias"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.107
+    ip_local: 172.16.0.107
+    liveness: true
+    snmp_enabled: false
+  - name: "ES3-Dr. Calva / Dr. Puente"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.115
+    ip_local: 172.16.0.115
+    liveness: true
+    snmp_enabled: false
+  - name: "ES1-Dr. Possani"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.108
+    ip_local: 172.16.0.108
+    liveness: true
+    snmp_enabled: false
+  - name: "EA-Consejo Interno"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.138
+    ip_local: 172.16.0.138
+    liveness: true
+    snmp_enabled: false
+  - name: "EN4-Proteómica"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.128
+    ip_local: 172.16.0.128
+    liveness: true
+    snmp_enabled: false
+  - name: "ES3-Dra. Joseph / Dr. Charli"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.116
+    ip_local: 172.16.0.116
+    liveness: true
+    snmp_enabled: false
+  - name: "ES1-Planta-Piloto"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.101
+    ip_local: 172.16.0.101
+    liveness: true
+    snmp_enabled: false
+  - name: "EA-Bibloteca"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.132
+    ip_local: 172.16.0.132
+    liveness: true
+    snmp_enabled: false
+  - name: "ES1-Auditorio-1"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.154
+    ip_local: 172.16.0.154
+    liveness: true
+    snmp_enabled: false
+  - name: "EN2-Cubiculos6-11"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.137
+    ip_local: 172.16.0.137
+    liveness: true
+    snmp_enabled: false
+  - name: "EN3-Dra. Cassab/Dr. Pedraza"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.125
+    ip_local: 172.16.0.125
+    liveness: true
+    snmp_enabled: false
+  - name: "ES2-Dr. Galindo / Dr. Ramírez"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.122
+    ip_local: 172.16.0.122
+    liveness: true
+    snmp_enabled: false
+  - name: "ES2-Dr. X. Soberón/ Dr. Morett"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.106
+    ip_local: 172.16.0.106
+    liveness: true
+    snmp_enabled: false
+  - name: "EN3-Dra. Leon / Dr. Ronceret"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.124
+    ip_local: 172.16.0.124
+    liveness: true
+    snmp_enabled: false
+  - name: "ES1-Área de Cubículos"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.120
+    ip_local: 172.16.0.120
+    liveness: true
+    snmp_enabled: false
+  - name: "EN2-Dra. Bravo/ Dr. M. Soberon"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.112
+    ip_local: 172.16.0.112
+    liveness: true
+    snmp_enabled: false
+  - name: "ES1-Aracnario"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.151
+    ip_local: 172.16.0.151
+    liveness: true
+    snmp_enabled: false
+  - name: "EN1-SeminariosPB"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.102
+    ip_local: 172.16.0.102
+    liveness: true
+    snmp_enabled: false
+  - name: "EN-Cubiculos1-5"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.136
+    ip_local: 172.16.0.136
+    liveness: true
+    snmp_enabled: false
+  - name: "EN2-Dr. Dubrovsky/ Dr. Pantoja"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.113
+    ip_local: 172.16.0.113
+    liveness: true
+    snmp_enabled: false
+  - name: "EN3-Dra. A Covarrubias / Dr. Ochoa"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.123
+    ip_local: 172.16.0.123
+    liveness: true
+    snmp_enabled: false
+  - name: "ES4-Aula Magna B"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.146
+    ip_local: 172.16.0.146
+    liveness: true
+    snmp_enabled: false
+  - name: "ES1-Dra. Ayala / Dr. Rudiño"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.119
+    ip_local: 172.16.0.119
+    liveness: true
+    snmp_enabled: false
+  - name: "EN3-Seminarios"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.121
+    ip_local: 172.16.0.121
+    liveness: true
+    snmp_enabled: false
+  - name: "EN1-Dr. Reynaud/Dr. Zurita"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.110
+    ip_local: 172.16.0.110
+    liveness: true
+    snmp_enabled: false
+  - name: "EN2-Dra. Quinto"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.111
+    ip_local: 172.16.0.111
+    liveness: true
+    snmp_enabled: false
+  - name: "ES3-Dr. A. Lopez"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.104
+    ip_local: 172.16.0.104
+    liveness: true
+    snmp_enabled: false
+  - name: "ES4-LIMPI1"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.157
+    ip_local: 172.16.0.157
+    liveness: true
+    snmp_enabled: false
+  - name: "EN1-Dra. Lomeli / Dra. Rosestein"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.103
+    ip_local: 172.16.0.103
+    liveness: true
+    snmp_enabled: false
+  - name: "EN1-Dr. Darszon"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.109
+    ip_local: 172.16.0.109
+    liveness: true
+    snmp_enabled: false
+  - name: "ES1-LuzBreton"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.135
+    ip_local: 172.16.0.135
+    liveness: true
+    snmp_enabled: false
+  - name: "ES4-Aula Magna A"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.145
+    ip_local: 172.16.0.145
+    liveness: true
+    snmp_enabled: false
+  - name: "ANEXO NORTE PASILLO N3"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.179
+    ip_local: 172.16.0.179
+    liveness: true
+    snmp_enabled: false
+  - name: "ANEXO NORTE PASILLO N2"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.176
+    ip_local: 172.16.0.176
+    liveness: true
+    snmp_enabled: false
+  - name: "RAMIREZ"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.180
+    ip_local: 172.16.0.180
+    liveness: true
+    snmp_enabled: false
+  - name: "TREVIÑO"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.172
+    ip_local: 172.16.0.172
+    liveness: true
+    snmp_enabled: false
+  - name: "PEREZ"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.170
+    ip_local: 172.16.0.170
+    liveness: true
+    snmp_enabled: false
+  - name: "DARSZON"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.174
+    ip_local: 172.16.0.174
+    liveness: true
+    snmp_enabled: false
+  - name: "ANEXO NORTE PASILLO N1"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.173
+    ip_local: 172.16.0.173
+    liveness: true
+    snmp_enabled: false
+  - name: "OCHOA"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.175
+    ip_local: 172.16.0.175
+    liveness: true
+    snmp_enabled: false
+  - name: "PALOMAREZ"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.178
+    ip_local: 172.16.0.178
+    liveness: true
+    snmp_enabled: false
+  - name: "RUDIÑO"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.177
+    ip_local: 172.16.0.177
+    liveness: true
+    snmp_enabled: false
+  - name: "PEDRAZA"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.171
+    ip_local: 172.16.0.171
+    liveness: true
+    snmp_enabled: false
+  - name: "ANEXO NORTE PASILLO PB"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.169
+    ip_local: 172.16.0.169
+    liveness: true
+    snmp_enabled: false
+  - name: "EN1-Lomeli / Rosenstein"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.181
+    ip_local: 172.16.0.181
+    liveness: true
+    snmp_enabled: false
+  - name: "EA-Administracion-ExComputo"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.163
+    ip_local: 172.16.0.163
+    liveness: true
+    snmp_enabled: false
+  - name: "ES3-Arias-Lopez-5D:D5"
+    type: ap                 # switch | router | server | firewall | ap
+    host: 172.16.0.165
+    ip_local: 172.16.0.165
+    liveness: true
+    snmp_enabled: false

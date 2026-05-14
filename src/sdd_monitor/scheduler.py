@@ -5,7 +5,7 @@ from pathlib import Path
 
 from apscheduler.schedulers.blocking import BlockingScheduler
 
-from sdd_monitor import collector, html_report, presentation, processor
+from sdd_monitor import collector, collector_liveness, html_report, presentation, processor
 from sdd_monitor.storage import Storage
 
 logger = logging.getLogger(__name__)
@@ -16,12 +16,14 @@ _shutdown_event = threading.Event()
 def _poll_cycle(devices: list[dict], db_path: Path, html_path: Path, interval: int) -> None:
     try:
         raw, errors = collector.collect(devices)
+        liveness = collector_liveness.collect(devices)
         metrics = processor.process(raw)
         with Storage(db_path) as storage:
             if metrics:
                 storage.insert(metrics)
-        presentation.render(metrics, errors)
-        html_report.generate(metrics, devices, errors, db_path, html_path, interval)
+            storage.insert_liveness(liveness)
+        presentation.render(metrics, errors, liveness)
+        html_report.generate(metrics, devices, errors, db_path, html_path, interval, liveness)
     except Exception as exc:
         logger.error("Error en ciclo de polling: %s", exc)
 
