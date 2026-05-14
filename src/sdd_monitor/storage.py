@@ -156,6 +156,39 @@ class Storage:
             )
         return results
 
+    def query_liveness_timerange(self, device_name: str, hours: int) -> list[LivenessRecord]:
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+        cursor = self._conn.execute(
+            "SELECT device_name, is_up, ping_rtt_ms, https_up, error, timestamp_utc "
+            "FROM ap_liveness "
+            "WHERE device_name = ? AND timestamp_utc >= ? "
+            "ORDER BY timestamp_utc ASC",
+            (device_name, cutoff),
+        )
+        results: list[LivenessRecord] = []
+        for row in cursor.fetchall():
+            results.append(
+                LivenessRecord(
+                    device_name=row[0],
+                    is_up=bool(row[1]),
+                    ping_rtt_ms=row[2],
+                    https_up=bool(row[3]),
+                    error=row[4],
+                    timestamp_utc=datetime.fromisoformat(row[5]).replace(tzinfo=timezone.utc),
+                )
+            )
+        return results
+
+    def had_liveness_down(self, device_name: str, hours: int = 72) -> bool:
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+        cursor = self._conn.execute(
+            "SELECT 1 FROM ap_liveness "
+            "WHERE device_name = ? AND is_up = 0 AND timestamp_utc >= ? "
+            "LIMIT 1",
+            (device_name, cutoff),
+        )
+        return cursor.fetchone() is not None
+
     def close(self) -> None:
         self._conn.close()
 

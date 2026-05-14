@@ -241,3 +241,38 @@ def test_query_latest_liveness_keeps_most_recent(tmp_path):
     assert len(latest) == 1
     assert latest[0].is_up is False
     assert latest[0].error == "down"
+
+
+def test_query_liveness_timerange_returns_ordered_records(tmp_path):
+    from datetime import timedelta
+
+    db = tmp_path / "metrics.db"
+    now = datetime.now(timezone.utc)
+    with Storage(db) as s:
+        s.insert_liveness(
+            [
+                LivenessRecord("ap-a", True, 2.0, True, None, now - timedelta(minutes=90)),
+                LivenessRecord("ap-a", False, None, False, "down", now - timedelta(minutes=30)),
+                LivenessRecord("ap-a", True, 3.0, True, None, now - timedelta(minutes=5)),
+            ]
+        )
+        recent = s.query_liveness_timerange("ap-a", hours=1)
+    assert len(recent) == 2
+    assert recent[0].is_up is False
+    assert recent[1].is_up is True
+
+
+def test_had_liveness_down_detects_recent_failure(tmp_path):
+    from datetime import timedelta
+
+    db = tmp_path / "metrics.db"
+    now = datetime.now(timezone.utc)
+    with Storage(db) as s:
+        s.insert_liveness(
+            [
+                LivenessRecord("ap-a", False, None, False, "down", now - timedelta(hours=10)),
+                LivenessRecord("ap-b", True, 2.0, True, None, now - timedelta(hours=10)),
+            ]
+        )
+        assert s.had_liveness_down("ap-a", hours=72) is True
+        assert s.had_liveness_down("ap-b", hours=72) is False

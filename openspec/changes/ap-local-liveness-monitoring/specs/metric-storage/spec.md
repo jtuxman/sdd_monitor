@@ -17,3 +17,14 @@ El sistema SHALL permitir consultar el ultimo snapshot disponible para cada AP m
 #### Scenario: Consulta de ultimo estado por AP
 - **WHEN** la capa de presentacion solicita el estado actual de APs
 - **THEN** el storage SHALL retornar el registro mas reciente por cada AP ordenado por nombre de dispositivo
+
+### Requirement: Consultar historial de liveness por rango temporal
+El sistema SHALL permitir consultar snapshots de liveness por AP en rangos temporales (`1h`, `1d`, `3d`, `7d`) para generar graficas e indicadores de perdida de contacto.
+
+#### Scenario: Consulta de historial para grafica
+- **WHEN** la capa de presentacion solicita historial de liveness para un AP y un rango temporal
+- **THEN** el storage SHALL retornar registros ordenados cronologicamente de mas antiguo a mas reciente dentro del rango solicitado
+
+#### Scenario: Consulta de caidas recientes en 72h
+- **WHEN** la capa de presentacion solicita verificar si hubo perdida de contacto en ultimas 72 horas
+- **THEN** el storage SHALL retornar verdadero si existe al menos un snapshot `is_up = false` en ese rango, en caso contrario falso

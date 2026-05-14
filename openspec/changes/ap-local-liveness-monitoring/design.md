@@ -12,6 +12,8 @@ El cambio cruza multiples modulos (collector, scheduler, storage, presentation y
 - Verificar disponibilidad de servicio HTTPS (`tcp/443`) por AP.
 - Persistir snapshots de liveness en SQLite para consulta y render.
 - Mostrar estado de APs en terminal y HTML en una seccion dedicada.
+- Mostrar grafica historica de liveness con los mismos rangos de tiempo de switches (`1h`, `1d`, `3d`, `7d`).
+- Mostrar en vista principal un marcador de "caida reciente" si hubo perdida de contacto en las ultimas 72 horas.
 - Mantener el scheduler resiliente: fallas por AP no detienen ciclos futuros.
 
 **Non-Goals:**
@@ -43,6 +45,20 @@ El cambio cruza multiples modulos (collector, scheduler, storage, presentation y
 - Guardar solo ultimo estado en memoria: se pierde trazabilidad entre reinicios.
 - Guardar eventos de cambio exclusivamente: mas compacto, pero complica consultas de estado actual.
 
+### 6. Representacion historica para grafica
+**Decision**: construir series binarias por intervalo de tiempo (`1 = up`, `0 = down`) usando snapshots almacenados y agregacion por bucket equivalente a switches (`1m`, `15m`, `1h`, `4h`).
+**Rationale**: reutiliza la misma experiencia de navegacion temporal y permite identificar claramente ventanas sin respuesta.
+**Alternatives considered**:
+- Graficar RTT solamente: no evidencia claramente periodos de "sin contacto".
+- Mostrar solo tabla de eventos: util para auditoria, menos legible para patrones temporales.
+
+### 7. Indicador resumido en vista principal
+**Decision**: mantener tarjeta principal de AP en formato resumido (`UP/DOWN`) y agregar badge/marker "caida reciente" si en ultimas 72h existe al menos un snapshot `is_up = false`.
+**Rationale**: evita sobrecargar la pantalla principal y dirige al usuario al detalle historico solo cuando hay señal de riesgo.
+**Alternatives considered**:
+- Mostrar siempre grafica en home: aumenta ruido visual y costo de render para muchos APs.
+- No mostrar indicador: reduce descubribilidad de incidentes intermitentes.
+
 ### 4. Integracion al scheduler en ruta no bloqueante del pipeline principal
 **Decision**: ejecutar liveness despues del collector SNMP y antes de presentation/html, capturando errores por AP para no romper el ciclo.
 **Rationale**: permite que la salida de terminal/HTML muestre en el mismo tick tanto metricas SNMP como salud de AP.
@@ -61,6 +77,7 @@ El cambio cruza multiples modulos (collector, scheduler, storage, presentation y
 - **Comando `ping` con diferencias por SO** -> encapsular parser y parametros para Linux (scope actual del servidor).
 - **Aumento de duracion del ciclo por muchos APs** -> aplicar timeout corto por check y ejecucion concurrente acotada.
 - **Falsos negativos transitorios** -> registrar error detallado por ciclo y considerar futuras ventanas de confirmacion (fuera de alcance actual).
+- **Historial voluminoso en SQLite** -> agregar consulta por rango y bucket para no renderizar puntos crudos de periodos largos.
 
 ## Migration Plan
 
@@ -68,6 +85,7 @@ El cambio cruza multiples modulos (collector, scheduler, storage, presentation y
 2. Actualizar `devices.yaml` para marcar APs a monitorear por liveness.
 3. Desplegar version nueva del monitor.
 4. Verificar en terminal y HTML la nueva seccion de APs.
+5. Verificar en HTML el badge de "caida reciente" y las graficas por rango en vista enfocada.
 5. Rollback: deshabilitar `liveness` en dispositivos o regresar a version previa; el resto del pipeline SNMP permanece operativo.
 
 ## Open Questions
@@ -75,3 +93,4 @@ El cambio cruza multiples modulos (collector, scheduler, storage, presentation y
 - Definir umbral exacto de timeout para ping y TCP (p.ej. 1s o 2s).
 - Definir si `is_up` final debe requerir ambos checks exitosos o solo uno.
 - Confirmar nombre final del tipo de dispositivo en config (`ap` vs `access-point`).
+- Definir texto final del marcador de home (ej. `Caida en 72h` vs `Inestable 72h`).

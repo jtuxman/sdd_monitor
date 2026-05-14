@@ -138,7 +138,7 @@ def test_generate_includes_liveness_section(tmp_path):
     ]
     generate([_record()], _devices(), {}, db, html_path, poll_interval=60, liveness=liveness)
     content = html_path.read_text()
-    assert "Liveness AP" in content
+    assert "Disponibilidad (1=UP, 0=DOWN)" in content
     assert "ap-1" in content
 
 
@@ -148,3 +148,33 @@ def test_generate_liveness_empty_message(tmp_path):
     generate([_record()], _devices(), {}, db, html_path, poll_interval=60, liveness=[])
     content = html_path.read_text()
     assert "Sin datos de liveness AP." in content
+
+
+def test_generate_liveness_badge_for_recent_down(tmp_path):
+    from datetime import timedelta
+
+    db = tmp_path / "metrics.db"
+    html_path = tmp_path / "report.html"
+    now = datetime.now(timezone.utc)
+    with Storage(db) as s:
+        s.insert_liveness(
+            [
+                LivenessRecord("ap-1", False, None, False, "down", now - timedelta(hours=10)),
+                LivenessRecord("ap-1", True, 3.2, True, None, now - timedelta(minutes=5)),
+            ]
+        )
+    liveness = [
+        LivenessRecord(
+            device_name="ap-1",
+            is_up=True,
+            ping_rtt_ms=3.2,
+            https_up=True,
+            error=None,
+            timestamp_utc=now,
+        )
+    ]
+    generate([_record()], _devices(), {}, db, html_path, poll_interval=60, liveness=liveness)
+    content = html_path.read_text()
+    assert "Caida en 72h" in content
+    assert "Disponibilidad (1=UP, 0=DOWN)" in content
+    assert "ap-live-btn" in content

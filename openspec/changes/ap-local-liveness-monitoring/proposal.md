@@ -9,6 +9,8 @@ El monitoreo basado en Meraki Dashboard puede tardar minutos en reflejar la caid
 - Registro en SQLite del estado de disponibilidad (`up/down`), latencia y timestamp del ultimo chequeo
 - Integracion al scheduler existente para ejecutar chequeos de liveness en cada ciclo sin bloquear el pipeline principal
 - Seccion dedicada en terminal y HTML para APs con estado actual, latencia y tiempo desde ultimo `up`
+- Historial de liveness de AP con graficas por rango temporal (`1h`, `1d`, `3d`, `7d`) para ver periodos sin respuesta
+- Indicador visual en la pagina principal cuando un AP perdio contacto en algun momento de las ultimas 72 horas
 - Manejo de fallas de red por dispositivo sin detener ciclos futuros
 
 ## Capabilities
@@ -20,6 +22,7 @@ El monitoreo basado en Meraki Dashboard puede tardar minutos en reflejar la caid
 - `metric-storage`: Agregar persistencia de eventos/snapshots de disponibilidad para APs
 - `poll-scheduling`: Extender el ciclo periodico para ejecutar chequeos de liveness local de APs
 - `terminal-display`: Mostrar estado de APs (`up/down`), latencia y ultima vez visto en consola
+- `html-report`: Mantener vista principal resumida (`UP/DOWN`) e incluir indicador de perdida reciente + detalle historico en vista enfocada
 
 ## Impact
 

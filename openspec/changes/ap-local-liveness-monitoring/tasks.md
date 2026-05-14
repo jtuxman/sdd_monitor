@@ -28,3 +28,11 @@
 - [x] 5.1 Agregar tests unitarios para `collector_liveness` (up/down, timeout, errores)
 - [x] 5.2 Agregar tests de storage para insercion/consulta de snapshots de liveness
 - [x] 5.3 Actualizar tests de scheduler/presentation/html para el nuevo flujo de datos
+
+## 6. Historial liveness y señalizacion en home
+
+- [x] 6.1 Extender `storage.py` con consulta por rango temporal de snapshots de liveness (`1h`, `1d`, `3d`, `7d`) para un AP
+- [x] 6.2 Agregar consulta booleana en `storage.py` para detectar si hubo al menos una caida (`is_up=false`) en ultimas 72 horas por AP
+- [x] 6.3 Actualizar `html_report.py` para mantener home resumido de AP (`UP/DOWN`) y agregar badge de advertencia cuando aplique (`caida en 72h`)
+- [x] 6.4 Implementar en `html_report.py` grafica historica de liveness en vista enfocada de AP con selector de rangos `1h/1d/3d/7d`
+- [x] 6.5 Agregar tests de `html_report` y `storage` para validar badge de caida reciente y datasets de grafica por rango

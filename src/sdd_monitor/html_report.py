@@ -26,6 +26,7 @@ _ICONS: dict[str, str] = {
     "router": "🌐",
     "server": "🖥️",
     "firewall": "🔒",
+    "ap": "📶",
 }
 _DEFAULT_ICON = "📡"
 
@@ -223,19 +224,36 @@ h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
 .iface-total { font-weight: 700; color: var(--accent); font-family: 'Menlo','Monaco',monospace; }
 .iface-table tr.status-down td { color: rgba(239,68,68,0.85); }
 .iface-error { color: #f87171; font-size: 0.82rem; margin-top: 0.5rem; }
-.liveness-card { margin-top: 1.5rem; }
-.liveness-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.84rem;
+.ap-status-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.5rem;
 }
-.liveness-table th, .liveness-table td {
+.ap-status-item {
+    background: rgba(15,23,42,0.35);
+    border: 1px solid rgba(51,65,85,0.5);
+    border-radius: 0.5rem;
     padding: 0.45rem 0.6rem;
-    border-bottom: 1px solid rgba(51,65,85,0.4);
-    text-align: left;
+    font-size: 0.8rem;
 }
+.ap-status-item .label { color: var(--muted); font-size: 0.72rem; display: block; margin-bottom: 0.2rem; }
+.ap-status-item .value { color: var(--text); font-weight: 600; }
 .status-up { color: #22c55e; font-weight: 600; }
 .status-down { color: #ef4444; font-weight: 600; }
+.recent-down-badge {
+    margin-left: auto;
+    background: rgba(245,158,11,0.18);
+    border: 1px solid rgba(245,158,11,0.45);
+    color: #fbbf24;
+    border-radius: 9999px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+.ap-liveness-detail { display: none; margin-top: 1rem; }
+.focus-mode .device-card.focused.ap-liveness-card .ap-liveness-detail { display: block; }
+.liveness-chart-wrap { position: relative; height: 150px; margin-top: 0.6rem; }
 .muted-note { color: var(--muted); font-size: 0.82rem; }
 """
 
@@ -357,43 +375,139 @@ def _build_interfaces_js() -> str:
 </script>"""
 
 
-def _build_liveness_card(liveness: list[LivenessRecord]) -> str:
+def _aggregate_liveness(
+    records: list[LivenessRecord],
+    bucket_minutes: int,
+    start_time: datetime,
+) -> tuple[list[str], list[int | None]]:
+    buckets: dict[int, list[int]] = {}
+    for r in records:
+        key = int(r.timestamp_utc.timestamp()) // (bucket_minutes * 60)
+        if key not in buckets:
+            buckets[key] = []
+        buckets[key].append(1 if r.is_up else 0)
+
+    now = datetime.now(timezone.utc)
+    start_key = int(start_time.timestamp()) // (bucket_minutes * 60)
+    end_key = int(now.timestamp()) // (bucket_minutes * 60)
+    all_keys = list(range(start_key, end_key + 1))
+
+    fmt = "%H:%M" if bucket_minutes < 60 else ("%m/%d %H:%M" if bucket_minutes < 1440 else "%m/%d")
+    labels: list[str] = []
+    data: list[int | None] = []
+    for key in all_keys:
+        ts = datetime.fromtimestamp(key * bucket_minutes * 60, tz=_TZ_MX)
+        labels.append(ts.strftime(fmt))
+        if key in buckets:
+            # Si hubo al menos una caida en el bucket, mostrar 0
+            data.append(min(buckets[key]))
+        else:
+            data.append(None)
+    return labels, data
+
+
+def _build_liveness_cards(
+    liveness: list[LivenessRecord],
+    recent_down: dict[str, bool],
+    liveness_ranges: dict[str, dict[str, tuple[list[str], list[int | None]]]],
+) -> tuple[str, list[dict]]:
     if not liveness:
         return (
-            '  <section class="device-card liveness-card">\n'
-            '    <div class="device-header"><span class="device-name">Liveness AP</span></div>\n'
-            '    <p class="muted-note">Sin datos de liveness AP.</p>\n'
-            "  </section>\n"
-        )
+            '    <section class="device-card ap-liveness-card" data-device="ap-liveness-empty">\n'
+            '      <div class="device-header"><span class="device-icon">📶</span><span class="device-name">Access Points</span></div>\n'
+            '      <p class="muted-note">Sin datos de liveness AP.</p>\n'
+            "    </section>\n"
+        ), []
 
-    rows = ""
+    cards = ""
+    charts: list[dict] = []
     for row in sorted(liveness, key=lambda x: x.device_name.lower()):
+        safe_name = _html.escape(row.device_name, quote=True)
         status_cls = "status-up" if row.is_up else "status-down"
         status_label = "UP" if row.is_up else "DOWN"
         https_label = "UP" if row.https_up else "DOWN"
-        rtt = f"{row.ping_rtt_ms:.2f}" if row.ping_rtt_ms is not None else "-"
-        err = _html.escape(row.error or "-")
-        ts = row.timestamp_utc.astimezone(_TZ_MX).strftime("%H:%M:%S")
-        rows += (
-            "<tr>"
-            f"<td>{_html.escape(row.device_name)}</td>"
-            f"<td class='{status_cls}'>{status_label}</td>"
-            f"<td>{rtt}</td>"
-            f"<td>{https_label}</td>"
-            f"<td>{ts} UTC-6</td>"
-            f"<td>{err}</td>"
-            "</tr>\n"
+        rtt = f"{row.ping_rtt_ms:.2f} ms" if row.ping_rtt_ms is not None else "-"
+        ts = row.timestamp_utc.astimezone(_TZ_MX).strftime("%H:%M:%S UTC-6")
+        badge = '<span class="recent-down-badge">Caida en 72h</span>' if recent_down.get(row.device_name, False) else ""
+
+        chart_id = _safe_id(f"ap-live-{row.device_name}")
+        ranges = liveness_ranges.get(row.device_name, {})
+        charts.append(
+            {
+                "id": chart_id,
+                "label": row.device_name,
+                "ranges": {k: {"labels": v[0], "data": v[1]} for k, v in ranges.items()},
+            }
         )
 
-    return (
-        '  <section class="device-card liveness-card">\n'
-        '    <div class="device-header"><span class="device-name">Liveness AP</span></div>\n'
-        '    <table class="liveness-table">\n'
-        "      <thead><tr><th>Dispositivo</th><th>Estado</th><th>RTT (ms)</th><th>HTTPS 443</th><th>Timestamp</th><th>Error</th></tr></thead>\n"
-        f"      <tbody>\n{rows}      </tbody>\n"
-        "    </table>\n"
-        "  </section>\n"
-    )
+        btns = "".join(
+            f'<button class="time-btn ap-live-btn{" active" if r == "1h" else ""}" '
+            f'data-chart-id="{chart_id}" data-range="{r}">{r}</button>'
+            for r in _RANGE_LABELS
+        )
+        cards += (
+            f'    <section class="device-card ap-liveness-card" data-device="{safe_name}">\n'
+            f'      <div class="device-header"><span class="device-icon">📶</span><span class="device-name">{_html.escape(row.device_name)}</span>{badge}</div>\n'
+            f'      <div class="ap-status-grid">\n'
+            f'        <div class="ap-status-item"><span class="label">Estado</span><span class="value {status_cls}">{status_label}</span></div>\n'
+            f'        <div class="ap-status-item"><span class="label">HTTPS 443</span><span class="value">{https_label}</span></div>\n'
+            f'        <div class="ap-status-item"><span class="label">RTT</span><span class="value">{rtt}</span></div>\n'
+            f'        <div class="ap-status-item"><span class="label">Ultimo check</span><span class="value">{ts}</span></div>\n'
+            f'      </div>\n'
+            f'      <div class="ap-liveness-detail">\n'
+            f'        <div class="chart-header"><span class="chart-label">Disponibilidad (1=UP, 0=DOWN)</span><div class="time-selector">{btns}</div></div>\n'
+            f'        <div class="liveness-chart-wrap"><canvas id="{chart_id}"></canvas></div>\n'
+            f'      </div>\n'
+            "    </section>\n"
+        )
+    return cards, charts
+
+
+def _build_liveness_js(liveness_charts: list[dict]) -> str:
+    if not liveness_charts:
+        return ""
+    chart_data_js = json.dumps({c["id"]: c["ranges"] for c in liveness_charts})
+    chart_meta_js = json.dumps({c["id"]: c["label"] for c in liveness_charts})
+    tpl = """<script>
+(function(){
+  var _data=__DATA__;
+  var _meta=__META__;
+  var _charts={};
+  for(var id in _data){
+    var el=document.getElementById(id);
+    if(!el)continue;
+    var d=_data[id]["1h"]||{labels:[],data:[]};
+    _charts[id]=new Chart(el,{
+      type:'line',
+      data:{labels:d.labels,datasets:[{
+        data:d.data,borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,0.12)',
+        borderWidth:2,pointRadius:2,tension:0.2,fill:true,spanGaps:false
+      }]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},title:{display:true,text:_meta[id],color:'#94a3b8',font:{size:11}}},
+        scales:{
+          x:{ticks:{color:'#94a3b8',maxTicksLimit:8},grid:{color:'rgba(51,65,85,0.4)'}},
+          y:{min:0,max:1,ticks:{color:'#94a3b8',stepSize:1,callback:function(v){return v===1?'UP':'DOWN';}},grid:{color:'rgba(51,65,85,0.4)'}}
+        }
+      }
+    });
+  }
+  document.querySelectorAll('.ap-live-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var id=this.dataset.chartId, range=this.dataset.range, chart=_charts[id];
+      if(!chart)return;
+      var d=(_data[id]&&_data[id][range])||{labels:[],data:[]};
+      chart.data.labels=d.labels;
+      chart.data.datasets[0].data=d.data;
+      chart.update();
+      this.closest('.time-selector').querySelectorAll('.ap-live-btn').forEach(function(b){b.classList.remove('active');});
+      this.classList.add('active');
+    });
+  });
+})();
+</script>"""
+    return tpl.replace("__DATA__", chart_data_js).replace("__META__", chart_meta_js)
 
 
 def _build_html(
@@ -403,6 +517,7 @@ def _build_html(
     charts_js: str,
     interfaces_js: str = "",
     liveness_cards: str = "",
+    liveness_js: str = "",
 ) -> str:
     focus_js = f"""<script>
 (function(){{
@@ -468,10 +583,11 @@ def _build_html(
   </header>
   <main class="devices-grid">
 {device_cards}
-  </main>
 {liveness_cards}
+  </main>
 {charts_js}
 {interfaces_js}
+{liveness_js}
 {focus_js}
 </body>
 </html>"""
@@ -644,6 +760,8 @@ def generate(
             by_device[r.device_name].append(r)
 
         range_data: dict[tuple[str, str], dict[str, tuple[list, list]]] = {}
+        liveness_ranges: dict[str, dict[str, tuple[list[str], list[int | None]]]] = {}
+        recent_down: dict[str, bool] = {}
         with Storage(db_path) as storage:
             for device_name, records in by_device.items():
                 for record in records:
@@ -656,6 +774,14 @@ def generate(
                         start = datetime.now(timezone.utc) - timedelta(hours=hours)
                         lbs, dt = _aggregate(raw, bucket_mins, start_time=start)
                         range_data[key][range_id] = (lbs, dt)
+            for row in liveness:
+                liveness_ranges[row.device_name] = {}
+                for range_id, hours, bucket_mins in _RANGES:
+                    raw_live = storage.query_liveness_timerange(row.device_name, hours)
+                    start = datetime.now(timezone.utc) - timedelta(hours=hours)
+                    lbs, dt = _aggregate_liveness(raw_live, bucket_mins, start_time=start)
+                    liveness_ranges[row.device_name][range_id] = (lbs, dt)
+                recent_down[row.device_name] = storage.had_liveness_down(row.device_name, hours=72)
 
         device_cards = ""
         all_charts: list[dict] = []
@@ -669,12 +795,14 @@ def generate(
         for device_name, error_msg in errors.items():
             device_cards += _build_error_card(device_name, type_map.get(device_name), error_msg)
 
+        liveness_cards, liveness_charts = _build_liveness_cards(liveness, recent_down, liveness_ranges)
         now_str = datetime.now(_TZ_MX).strftime("%Y-%m-%d %H:%M:%S UTC-6")
         html_content = _build_html(
             now_str, poll_interval, device_cards,
             _build_charts_js(all_charts),
             _build_interfaces_js(),
-            _build_liveness_card(liveness),
+            liveness_cards,
+            _build_liveness_js(liveness_charts),
         )
 
         html_path = Path(html_path)
