@@ -735,7 +735,7 @@ def _build_charts_js(all_charts: list[dict]) -> str:
         data:d.data,
         borderColor:'#06b6d4',
         backgroundColor:'rgba(6,182,212,0.08)',
-        borderWidth:2,pointRadius:3,tension:0.35,fill:true,spanGaps:false
+        borderWidth:2,pointRadius:3,tension:0.35,fill:true,spanGaps:true
       }}]}},
       options:opts
     }});
