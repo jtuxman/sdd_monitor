@@ -23,9 +23,17 @@ El sistema SHALL proveer un script CGI en `scripts/interfaces.py` que, al recibi
 - **WHEN** el WALK de `ifHCInOctets` no retorna datos para el switch
 - **THEN** el script SHALL intentar el WALK de `ifInOctets` e `ifOutOctets` como alternativa
 
-### Requirement: Conversión de octets a GB
-El script CGI SHALL convertir los valores de octets (ifHCInOctets, ifHCOutOctets) a gigabytes con 2 decimales de precisión.
+### Requirement: Conversión de octets a unidad legible
+El script CGI SHALL convertir los valores de octets (ifHCInOctets, ifHCOutOctets) a gigabytes con 2 decimales. La presentación en el HTML SHALL mostrar el valor en TB cuando supere los 1000 GB, manteniendo el valor en GB en el JSON para preservar el ordenamiento correcto.
 
 #### Scenario: Conversión de octets a GB
 - **WHEN** el WALK retorna un valor de octets para una interfaz
-- **THEN** el script SHALL calcular `gb = octets / 1_073_741_824` y redondearlo a 2 decimales
+- **THEN** el script SHALL calcular `gb = octets / 1_073_741_824` y redondearlo a 2 decimales, retornando el valor numérico en GB en el JSON
+
+#### Scenario: Presentación en TB cuando el valor supera 1000 GB
+- **WHEN** el valor de una columna (In, Out o Total) es mayor o igual a 1000 GB
+- **THEN** el HTML SHALL mostrar el valor dividido entre 1024 con 2 decimales y la unidad "TB" en lugar de "GB"
+
+#### Scenario: Presentación en GB cuando el valor es menor a 1000 GB
+- **WHEN** el valor de una columna (In, Out o Total) es menor a 1000 GB
+- **THEN** el HTML SHALL mostrar el valor con 2 decimales y la unidad "GB"

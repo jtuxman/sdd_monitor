@@ -312,14 +312,18 @@ def _build_interfaces_js() -> str:
             result.innerHTML='<p class="iface-error">Error: '+data.error+'</p>';
             btn.textContent='\u21ba Reintentar';btn.disabled=false;return;
           }
+          function fmtBytes(gb){
+            if(gb>=1000)return (gb/1024).toFixed(2)+' TB';
+            return gb.toFixed(2)+' GB';
+          }
           var rows=data.interfaces.map(function(iface){
             var cls=iface.status==='down'?' class="status-down"':'';
             return '<tr'+cls+'>'
               +'<td>'+iface.name+'</td>'
               +'<td>'+(iface.alias||'\u2014')+'</td>'
-              +'<td>'+iface.in_gb+'</td>'
-              +'<td>'+iface.out_gb+'</td>'
-              +'<td class="iface-total">'+iface.total_gb+' GB</td>'
+              +'<td>'+fmtBytes(iface.in_gb)+'</td>'
+              +'<td>'+fmtBytes(iface.out_gb)+'</td>'
+              +'<td class="iface-total">'+fmtBytes(iface.total_gb)+'</td>'
               +'<td>'+(iface.status==='up'?'🟢 up':'🔴 down')+'</td>'
               +'</tr>';
           }).join('');
