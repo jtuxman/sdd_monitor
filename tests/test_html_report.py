@@ -178,3 +178,5 @@ def test_generate_liveness_badge_for_recent_down(tmp_path):
     assert "Caida en 72h" in content
     assert "Disponibilidad (1=UP, 0=DOWN)" in content
     assert "ap-live-btn" in content
+    assert 'data-range="3d">3d</button>' in content
+    assert "ap-live-btn active" in content

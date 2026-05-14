@@ -22,6 +22,10 @@ En la vista detallada/enfocada de un AP, el HTML SHALL mostrar una grafica de di
 - **WHEN** el usuario selecciona otro rango (`1h`, `1d`, `3d`, `7d`) en la grafica de liveness
 - **THEN** la grafica SHALL actualizarse sin recargar la pagina, usando los datos correspondientes al rango
 
+#### Scenario: Rango por defecto de liveness para AP
+- **WHEN** el usuario entra al detalle de liveness de un AP por primera vez
+- **THEN** la grafica SHALL inicializarse por defecto en el rango `3d` para facilitar la deteccion rapida de caidas recientes
+
 #### Scenario: Rango sin datos de liveness
 - **WHEN** el AP no tiene snapshots en el rango seleccionado
 - **THEN** el HTML SHALL mostrar la grafica vacia o un mensaje "sin datos" sin producir error

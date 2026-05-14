@@ -441,7 +441,7 @@ def _build_liveness_cards(
         )
 
         btns = "".join(
-            f'<button class="time-btn ap-live-btn{" active" if r == "1h" else ""}" '
+            f'<button class="time-btn ap-live-btn{" active" if r == "3d" else ""}" '
             f'data-chart-id="{chart_id}" data-range="{r}">{r}</button>'
             for r in _RANGE_LABELS
         )
@@ -476,7 +476,7 @@ def _build_liveness_js(liveness_charts: list[dict]) -> str:
   for(var id in _data){
     var el=document.getElementById(id);
     if(!el)continue;
-    var d=_data[id]["1h"]||{labels:[],data:[]};
+    var d=_data[id]["3d"]||{labels:[],data:[]};
     _charts[id]=new Chart(el,{
       type:'line',
       data:{labels:d.labels,datasets:[{
