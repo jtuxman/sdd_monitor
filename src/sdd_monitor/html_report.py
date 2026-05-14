@@ -484,11 +484,17 @@ def _build_liveness_js(liveness_charts: list[dict]) -> str:
         backgroundColor:'rgba(34,197,94,0.12)',
         borderWidth:2,
         pointRadius:2,
-        pointBackgroundColor:function(ctx){return ctx.raw===0?'#ef4444':'#22c55e';},
-        pointBorderColor:function(ctx){return ctx.raw===0?'#ef4444':'#22c55e';},
+        pointBackgroundColor:function(ctx){
+          var y = (ctx && ctx.parsed) ? Number(ctx.parsed.y) : Number(ctx.raw);
+          return y===0?'#ef4444':'#22c55e';
+        },
+        pointBorderColor:function(ctx){
+          var y = (ctx && ctx.parsed) ? Number(ctx.parsed.y) : Number(ctx.raw);
+          return y===0?'#ef4444':'#22c55e';
+        },
         segment:{
           borderColor:function(ctx){
-            var y0=ctx.p0.parsed.y, y1=ctx.p1.parsed.y;
+            var y0=Number(ctx.p0.parsed.y), y1=Number(ctx.p1.parsed.y);
             return (y0===0||y1===0)?'#ef4444':'#22c55e';
           }
         },
