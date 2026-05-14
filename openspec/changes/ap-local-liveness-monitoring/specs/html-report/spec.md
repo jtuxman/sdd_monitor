@@ -37,3 +37,11 @@ En la vista detallada/enfocada de un AP, el HTML SHALL mostrar una grafica de di
 #### Scenario: Rango sin datos de liveness
 - **WHEN** el AP no tiene snapshots en el rango seleccionado
 - **THEN** el HTML SHALL mostrar la grafica vacia o un mensaje "sin datos" sin producir error
+
+#### Scenario: Codificacion visual de estado en la grafica
+- **WHEN** la grafica de liveness renderiza puntos o segmentos con valor `DOWN (0)`
+- **THEN** esos puntos/segmentos SHALL mostrarse en color rojo para destacar la caida
+
+#### Scenario: Codificacion visual de disponibilidad
+- **WHEN** la grafica de liveness renderiza puntos o segmentos con valor `UP (1)`
+- **THEN** esos puntos/segmentos SHALL mostrarse en color verde para indicar disponibilidad

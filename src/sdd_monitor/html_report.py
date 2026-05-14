@@ -479,8 +479,20 @@ def _build_liveness_js(liveness_charts: list[dict]) -> str:
     _charts[id]=new Chart(el,{
       type:'line',
       data:{labels:d.labels,datasets:[{
-        data:d.data,borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,0.12)',
-        borderWidth:2,pointRadius:2,tension:0.2,fill:true,spanGaps:false
+        data:d.data,
+        borderColor:'#22c55e',
+        backgroundColor:'rgba(34,197,94,0.12)',
+        borderWidth:2,
+        pointRadius:2,
+        pointBackgroundColor:function(ctx){return ctx.raw===0?'#ef4444':'#22c55e';},
+        pointBorderColor:function(ctx){return ctx.raw===0?'#ef4444':'#22c55e';},
+        segment:{
+          borderColor:function(ctx){
+            var y0=ctx.p0.parsed.y, y1=ctx.p1.parsed.y;
+            return (y0===0||y1===0)?'#ef4444':'#22c55e';
+          }
+        },
+        tension:0.2,fill:true,spanGaps:false
       }]},
       options:{
         responsive:true,maintainAspectRatio:false,
