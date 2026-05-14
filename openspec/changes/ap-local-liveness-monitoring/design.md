@@ -14,6 +14,7 @@ El cambio cruza multiples modulos (collector, scheduler, storage, presentation y
 - Mostrar estado de APs en terminal y HTML en una seccion dedicada.
 - Mostrar grafica historica de liveness con los mismos rangos de tiempo de switches (`1h`, `1d`, `3d`, `7d`).
 - Mostrar en vista principal un marcador de "caida reciente" si hubo perdida de contacto en las ultimas 72 horas.
+- Mostrar en la pagina principal la grafica de liveness de cada AP con rango por defecto `3d`.
 - Mantener el scheduler resiliente: fallas por AP no detienen ciclos futuros.
 
 **Non-Goals:**
@@ -52,11 +53,11 @@ El cambio cruza multiples modulos (collector, scheduler, storage, presentation y
 - Graficar RTT solamente: no evidencia claramente periodos de "sin contacto".
 - Mostrar solo tabla de eventos: util para auditoria, menos legible para patrones temporales.
 
-### 7. Indicador resumido en vista principal
-**Decision**: mantener tarjeta principal de AP en formato resumido (`UP/DOWN`) y agregar badge/marker "caida reciente" si en ultimas 72h existe al menos un snapshot `is_up = false`.
-**Rationale**: evita sobrecargar la pantalla principal y dirige al usuario al detalle historico solo cuando hay señal de riesgo.
+### 7. Indicador y grafica en vista principal
+**Decision**: en home, cada AP muestra estado (`UP/DOWN`), badge de "caida reciente" (ultimas 72h) y grafica de disponibilidad visible por defecto en `3d`; al click se conserva el comportamiento de vista individual (focus mode) igual que switches.
+**Rationale**: permite deteccion inmediata de patrones de caida sin perder la navegacion ya conocida por el usuario.
 **Alternatives considered**:
-- Mostrar siempre grafica en home: aumenta ruido visual y costo de render para muchos APs.
+- Mantener home solo resumido: obliga a abrir detalle para cualquier inspeccion.
 - No mostrar indicador: reduce descubribilidad de incidentes intermitentes.
 
 ### 4. Integracion al scheduler en ruta no bloqueante del pipeline principal
@@ -85,7 +86,7 @@ El cambio cruza multiples modulos (collector, scheduler, storage, presentation y
 2. Actualizar `devices.yaml` para marcar APs a monitorear por liveness.
 3. Desplegar version nueva del monitor.
 4. Verificar en terminal y HTML la nueva seccion de APs.
-5. Verificar en HTML el badge de "caida reciente" y las graficas por rango en vista enfocada.
+5. Verificar en HTML el badge de "caida reciente" y las graficas por rango en home y en vista enfocada.
 5. Rollback: deshabilitar `liveness` en dispositivos o regresar a version previa; el resto del pipeline SNMP permanece operativo.
 
 ## Open Questions

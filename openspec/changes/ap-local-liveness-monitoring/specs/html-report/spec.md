@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
-### Requirement: Vista principal de AP con estado resumido e indicador de caida reciente
-La pagina principal SHALL mantener una vista resumida de APs mostrando estado actual (`UP`/`DOWN`) sin desplegar por defecto la grafica historica de liveness. Cuando un AP haya perdido contacto al menos una vez en ultimas 72 horas, SHALL mostrar un indicador visual de advertencia.
+### Requirement: Vista principal de AP con estado, grafica e indicador de caida reciente
+La pagina principal SHALL mostrar cada AP con estado actual (`UP`/`DOWN`), su grafica historica de liveness visible y un indicador visual de advertencia cuando haya habido perdida de contacto en ultimas 72 horas.
 
 #### Scenario: AP estable en ultimas 72 horas
 - **WHEN** el AP no tiene snapshots `is_up = false` en ultimas 72 horas
@@ -10,6 +10,10 @@ La pagina principal SHALL mantener una vista resumida de APs mostrando estado ac
 #### Scenario: AP con perdida de contacto reciente
 - **WHEN** el AP tiene uno o mas snapshots `is_up = false` en ultimas 72 horas
 - **THEN** la tarjeta principal SHALL mostrar un badge visual (ej. `Caida en 72h`) para invitar al usuario a revisar el detalle
+
+#### Scenario: Grafica visible en la pagina principal
+- **WHEN** la pagina principal carga con datos de liveness de AP
+- **THEN** cada tarjeta de AP SHALL mostrar su grafica de disponibilidad sin requerir entrar a vista enfocada
 
 ### Requirement: Grafica historica de liveness en vista enfocada de AP
 En la vista detallada/enfocada de un AP, el HTML SHALL mostrar una grafica de disponibilidad historica con selector de rango temporal (`1h`, `1d`, `3d`, `7d`) equivalente al flujo de switches.
@@ -23,8 +27,12 @@ En la vista detallada/enfocada de un AP, el HTML SHALL mostrar una grafica de di
 - **THEN** la grafica SHALL actualizarse sin recargar la pagina, usando los datos correspondientes al rango
 
 #### Scenario: Rango por defecto de liveness para AP
-- **WHEN** el usuario entra al detalle de liveness de un AP por primera vez
+- **WHEN** la grafica de liveness de un AP se renderiza (en home o en vista enfocada) por primera vez
 - **THEN** la grafica SHALL inicializarse por defecto en el rango `3d` para facilitar la deteccion rapida de caidas recientes
+
+#### Scenario: Click en AP abre vista individual
+- **WHEN** el usuario hace click sobre una tarjeta de AP en la pagina principal
+- **THEN** la pagina SHALL entrar en vista individual (focus mode) del AP seleccionado, con el mismo comportamiento de navegacion usado para switches
 
 #### Scenario: Rango sin datos de liveness
 - **WHEN** el AP no tiene snapshots en el rango seleccionado

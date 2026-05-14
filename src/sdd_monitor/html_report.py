@@ -251,8 +251,7 @@ h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
     font-size: 0.7rem;
     font-weight: 600;
 }
-.ap-liveness-detail { display: none; margin-top: 1rem; }
-.focus-mode .device-card.focused.ap-liveness-card .ap-liveness-detail { display: block; }
+.ap-liveness-detail { display: block; margin-top: 1rem; }
 .liveness-chart-wrap { position: relative; height: 150px; margin-top: 0.6rem; }
 .muted-note { color: var(--muted); font-size: 0.82rem; }
 """

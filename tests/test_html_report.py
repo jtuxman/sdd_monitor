@@ -180,3 +180,41 @@ def test_generate_liveness_badge_for_recent_down(tmp_path):
     assert "ap-live-btn" in content
     assert 'data-range="3d">3d</button>' in content
     assert "ap-live-btn active" in content
+
+
+def test_generate_ap_liveness_graph_visible_in_home(tmp_path):
+    db = tmp_path / "metrics.db"
+    html_path = tmp_path / "report.html"
+    liveness = [
+        LivenessRecord(
+            device_name="ap-1",
+            is_up=True,
+            ping_rtt_ms=1.2,
+            https_up=True,
+            error=None,
+            timestamp_utc=datetime.now(timezone.utc),
+        )
+    ]
+    generate([_record()], _devices(), {}, db, html_path, poll_interval=60, liveness=liveness)
+    content = html_path.read_text()
+    assert ".ap-liveness-detail { display: block;" in content
+    assert '<canvas id="ap-live-ap-1"></canvas>' in content
+
+
+def test_generate_keeps_focus_mode_behavior_for_ap_cards(tmp_path):
+    db = tmp_path / "metrics.db"
+    html_path = tmp_path / "report.html"
+    liveness = [
+        LivenessRecord(
+            device_name="ap-1",
+            is_up=True,
+            ping_rtt_ms=1.2,
+            https_up=True,
+            error=None,
+            timestamp_utc=datetime.now(timezone.utc),
+        )
+    ]
+    generate([_record()], _devices(), {}, db, html_path, poll_interval=60, liveness=liveness)
+    content = html_path.read_text()
+    assert "if(!_focusActive)enterFocus(card.dataset.device);" in content
+    assert 'data-device="ap-1"' in content

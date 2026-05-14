@@ -36,3 +36,10 @@
 - [x] 6.3 Actualizar `html_report.py` para mantener home resumido de AP (`UP/DOWN`) y agregar badge de advertencia cuando aplique (`caida en 72h`)
 - [x] 6.4 Implementar en `html_report.py` grafica historica de liveness en vista enfocada de AP con selector de rangos `1h/1d/3d/7d`
 - [x] 6.5 Agregar tests de `html_report` y `storage` para validar badge de caida reciente y datasets de grafica por rango
+
+## 7. Grafica liveness visible en home para AP
+
+- [x] 7.1 Actualizar `html_report.py` para renderizar la grafica de liveness de cada AP directamente en la pagina principal (sin requerir focus mode)
+- [x] 7.2 Mantener el rango por defecto en `3d` y el selector `1h/1d/3d/7d` visible en home y en vista enfocada
+- [x] 7.3 Preservar el comportamiento de click en tarjeta AP para entrar a vista individual, igual que switches
+- [x] 7.4 Agregar/ajustar tests de `html_report` para validar presencia de grafica de AP en home y navegacion a vista individual
