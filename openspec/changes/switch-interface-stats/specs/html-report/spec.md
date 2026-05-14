@@ -15,6 +15,10 @@ El HTML generado SHALL incluir un botón "Ver interfaces" visible únicamente de
 - **WHEN** el usuario hace click en "Ver interfaces" y el CGI retorna datos
 - **THEN** el HTML SHALL renderizar una tabla con columnas: Interfaz, Descripción, Entrada (GB), Salida (GB), Total (GB), Estado; ordenada por Total descendente con interfaces `down` al final marcadas visualmente en rojo
 
+#### Scenario: Tabla de interfaces se limpia al salir de la vista de foco
+- **WHEN** el usuario hace click en "← Volver" para regresar a la vista general
+- **THEN** el HTML SHALL limpiar la tabla de interfaces y restaurar el botón a su estado inicial ("Ver interfaces") para que la siguiente vez que se entre en foco el dispositivo se muestre sin datos previos cargados
+
 #### Scenario: Click en botón con error del CGI
 - **WHEN** el usuario hace click en "Ver interfaces" y el CGI retorna un error o no está disponible
 - **THEN** el HTML SHALL mostrar un mensaje de error descriptivo en lugar de la tabla, sin romper el resto de la vista de foco

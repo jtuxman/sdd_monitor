@@ -359,7 +359,13 @@ def _build_html(now_str: str, poll_interval: int, device_cards: str, charts_js: 
   function exitFocus(){{
     _focusActive=false;
     document.body.classList.remove('focus-mode');
-    document.querySelectorAll('.device-card').forEach(function(c){{c.classList.remove('focused');}});
+    document.querySelectorAll('.device-card').forEach(function(c){{
+      c.classList.remove('focused');
+      var r=c.querySelector('.iface-result');
+      if(r)r.innerHTML='';
+      var b=c.querySelector('.iface-btn');
+      if(b){{b.textContent='Ver interfaces';b.disabled=false;}}
+    }});
     window.location.hash='';
     startTimer();
   }}
