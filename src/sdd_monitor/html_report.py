@@ -483,7 +483,7 @@ def _build_liveness_js(liveness_charts: list[dict]) -> str:
         borderColor:'#22c55e',
         backgroundColor:'rgba(34,197,94,0.12)',
         borderWidth:2,
-        pointRadius:2,
+        pointRadius:3,
         pointBackgroundColor:function(ctx){
           var y = (ctx && ctx.parsed) ? Number(ctx.parsed.y) : Number(ctx.raw);
           return y===0?'#ef4444':'#22c55e';
@@ -496,9 +496,13 @@ def _build_liveness_js(liveness_charts: list[dict]) -> str:
           borderColor:function(ctx){
             var y0=Number(ctx.p0.parsed.y), y1=Number(ctx.p1.parsed.y);
             return (y0===0||y1===0)?'#ef4444':'#22c55e';
+          },
+          backgroundColor:function(ctx){
+            var y0=Number(ctx.p0.parsed.y), y1=Number(ctx.p1.parsed.y);
+            return (y0===0||y1===0)?'rgba(239,68,68,0.18)':'rgba(34,197,94,0.12)';
           }
         },
-        stepped:true,tension:0,fill:false,spanGaps:false
+        stepped:false,tension:0.35,fill:true,spanGaps:true
       }]},
       options:{
         responsive:true,maintainAspectRatio:false,

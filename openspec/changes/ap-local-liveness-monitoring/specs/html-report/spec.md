@@ -46,10 +46,10 @@ En la vista detallada/enfocada de un AP, el HTML SHALL mostrar una grafica de di
 - **WHEN** la grafica de liveness renderiza puntos o segmentos con valor `UP (1)`
 - **THEN** esos puntos/segmentos SHALL mostrarse en color verde para indicar disponibilidad
 
-#### Scenario: Representacion escalonada de estado
+#### Scenario: Linea continua y area rellena como switches
 - **WHEN** la grafica de liveness de AP se renderiza
-- **THEN** SHALL usar representacion escalonada (step chart) para reflejar cambios discretos entre `UP (1)` y `DOWN (0)` sin interpolacion diagonal
+- **THEN** SHALL usar linea con `tension` suave, puntos conectados (`spanGaps: true` donde aplique) y area semitransparente bajo la curva (`fill: true`), alineado al estilo de las graficas SNMP de switches
 
-#### Scenario: Grafica sin relleno de area
-- **WHEN** la grafica de liveness de AP se renderiza
-- **THEN** SHALL mostrarse sin relleno bajo la linea (`fill: false`) para evitar columnas visuales confusas en periodos con datos esparsos
+#### Scenario: Relleno que marca caidas
+- **WHEN** un segmento de la serie cruza o permanece en `DOWN (0)`
+- **THEN** el area bajo ese tramo SHALL distinguirse visualmente (p. ej. tinte rojo semitransparente) frente a los tramos `UP (1)` (tinte verde semitransparente), coherente con los colores de linea/puntos ya definidos
