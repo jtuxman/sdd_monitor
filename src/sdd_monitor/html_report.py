@@ -498,7 +498,7 @@ def _build_liveness_js(liveness_charts: list[dict]) -> str:
             return (y0===0||y1===0)?'#ef4444':'#22c55e';
           }
         },
-        tension:0.2,fill:true,spanGaps:false
+        stepped:true,tension:0,fill:false,spanGaps:false
       }]},
       options:{
         responsive:true,maintainAspectRatio:false,

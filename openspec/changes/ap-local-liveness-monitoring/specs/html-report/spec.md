@@ -45,3 +45,11 @@ En la vista detallada/enfocada de un AP, el HTML SHALL mostrar una grafica de di
 #### Scenario: Codificacion visual de disponibilidad
 - **WHEN** la grafica de liveness renderiza puntos o segmentos con valor `UP (1)`
 - **THEN** esos puntos/segmentos SHALL mostrarse en color verde para indicar disponibilidad
+
+#### Scenario: Representacion escalonada de estado
+- **WHEN** la grafica de liveness de AP se renderiza
+- **THEN** SHALL usar representacion escalonada (step chart) para reflejar cambios discretos entre `UP (1)` y `DOWN (0)` sin interpolacion diagonal
+
+#### Scenario: Grafica sin relleno de area
+- **WHEN** la grafica de liveness de AP se renderiza
+- **THEN** SHALL mostrarse sin relleno bajo la linea (`fill: false`) para evitar columnas visuales confusas en periodos con datos esparsos
