@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/home/jmanuel/sdd_monitor/.venv/bin/python3
 """CGI script: consulta on-demand de estadísticas de interfaces en switches Cisco.
 
 Uso: GET /cgi-bin/interfaces.py?device=<nombre>
