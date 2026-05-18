@@ -16,11 +16,11 @@ El sistema SHALL generar un archivo HTML estático al finalizar cada ciclo de po
 - **THEN** el sistema SHALL usar `data/report.html` como ruta por defecto
 
 ### Requirement: Mostrar estado actual por dispositivo
-El HTML generado SHALL incluir una sección por cada dispositivo configurado con el último valor recibido para cada OID en el ciclo de polling más reciente.
+El HTML generado SHALL incluir una sección por cada dispositivo configurado con el último valor recibido para cada OID en el ciclo de polling más reciente. En la cabecera visible de cada tarjeta de dispositivo, el HTML SHALL mostrar el **nombre monitoreado** (el campo `name` definido para el dispositivo en la configuración) y la **dirección de monitoreo** (el valor del campo `host`, de forma que sea identificable la IP o hostname contra el que se hace el poll).
 
 #### Scenario: Estado actual visible
 - **WHEN** el HTML es abierto en un browser
-- **THEN** SHALL mostrar el nombre del dispositivo, su icono, y para cada OID: la etiqueta legible (o el OID crudo si no hay label), el valor actual y la marca de tiempo UTC del último registro
+- **THEN** SHALL mostrar el nombre monitoreado (`name`), la dirección de monitoreo (`host`), el icono del dispositivo, y para cada OID: la etiqueta legible (o el OID crudo si no hay label), el valor actual y la marca de tiempo UTC del último registro
 
 #### Scenario: OID de uptime muestra tiempo legible
 - **WHEN** el label de un OID contiene "uptime" (case-insensitive)

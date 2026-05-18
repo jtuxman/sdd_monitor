@@ -29,6 +29,18 @@ def _devices(device_type="switch"):
     ]
 
 
+def _ap_device(name="ap-1", host="192.168.50.10"):
+    return {
+        "name": name,
+        "type": "ap",
+        "host": host,
+        "liveness": True,
+        "snmp_version": "2c",
+        "community": "public",
+        "oids": [],
+    }
+
+
 def test_generate_creates_html_file(tmp_path):
     db = tmp_path / "metrics.db"
     html_path = tmp_path / "report.html"
@@ -43,6 +55,15 @@ def test_generate_html_contains_device_name(tmp_path):
     generate([_record()], _devices(), {}, db, html_path, poll_interval=60)
     content = html_path.read_text()
     assert "switch-core" in content
+
+
+def test_generate_html_shows_device_host(tmp_path):
+    db = tmp_path / "metrics.db"
+    html_path = tmp_path / "report.html"
+    generate([_record()], _devices(), {}, db, html_path, poll_interval=60)
+    content = html_path.read_text()
+    assert "10.0.0.1" in content
+    assert 'class="device-host"' in content
 
 
 def test_generate_html_auto_refresh_via_js(tmp_path):
@@ -110,6 +131,7 @@ def test_generate_shows_error_card_for_unreachable_device(tmp_path):
     generate([], _devices(), errors, db, html_path, poll_interval=60)
     content = html_path.read_text()
     assert "switch-core" in content
+    assert "10.0.0.1" in content
     assert "Sin respuesta" in content
     assert "No SNMP response received before timeout" in content
     assert "error-card" in content
@@ -136,10 +158,11 @@ def test_generate_includes_liveness_section(tmp_path):
             timestamp_utc=datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         )
     ]
-    generate([_record()], _devices(), {}, db, html_path, poll_interval=60, liveness=liveness)
+    generate([_record()], _devices() + [_ap_device()], {}, db, html_path, poll_interval=60, liveness=liveness)
     content = html_path.read_text()
     assert "Disponibilidad (1=UP, 0=DOWN)" in content
     assert "ap-1" in content
+    assert "192.168.50.10" in content
 
 
 def test_generate_liveness_empty_message(tmp_path):
@@ -173,7 +196,7 @@ def test_generate_liveness_badge_for_recent_down(tmp_path):
             timestamp_utc=now,
         )
     ]
-    generate([_record()], _devices(), {}, db, html_path, poll_interval=60, liveness=liveness)
+    generate([_record()], _devices() + [_ap_device()], {}, db, html_path, poll_interval=60, liveness=liveness)
     content = html_path.read_text()
     assert "Caida en 72h" in content
     assert "Disponibilidad (1=UP, 0=DOWN)" in content
@@ -195,10 +218,11 @@ def test_generate_ap_liveness_graph_visible_in_home(tmp_path):
             timestamp_utc=datetime.now(timezone.utc),
         )
     ]
-    generate([_record()], _devices(), {}, db, html_path, poll_interval=60, liveness=liveness)
+    generate([_record()], _devices() + [_ap_device()], {}, db, html_path, poll_interval=60, liveness=liveness)
     content = html_path.read_text()
     assert ".ap-liveness-detail { display: block;" in content
     assert '<canvas id="ap-live-ap-1"></canvas>' in content
+    assert "192.168.50.10" in content
 
 
 def test_generate_keeps_focus_mode_behavior_for_ap_cards(tmp_path):
@@ -214,7 +238,7 @@ def test_generate_keeps_focus_mode_behavior_for_ap_cards(tmp_path):
             timestamp_utc=datetime.now(timezone.utc),
         )
     ]
-    generate([_record()], _devices(), {}, db, html_path, poll_interval=60, liveness=liveness)
+    generate([_record()], _devices() + [_ap_device()], {}, db, html_path, poll_interval=60, liveness=liveness)
     content = html_path.read_text()
     assert "if(!_focusActive)enterFocus(card.dataset.device);" in content
     assert 'data-device="ap-1"' in content

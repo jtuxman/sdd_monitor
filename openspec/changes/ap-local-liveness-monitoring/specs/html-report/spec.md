@@ -1,7 +1,11 @@
 ## ADDED Requirements
 
 ### Requirement: Vista principal de AP con estado, grafica e indicador de caida reciente
-La pagina principal SHALL mostrar cada AP con estado actual (`UP`/`DOWN`), su grafica historica de liveness visible y un indicador visual de advertencia cuando haya habido perdida de contacto en ultimas 72 horas.
+La pagina principal SHALL mostrar cada AP con estado actual (`UP`/`DOWN`), su grafica historica de liveness visible y un indicador visual de advertencia cuando haya habido perdida de contacto en ultimas 72 horas. Cada tarjeta de AP SHALL mostrar de forma visible el nombre monitoreado del dispositivo (`name` en la configuracion) y la direccion de monitoreo (`host`, IP o hostname segun la configuracion).
+
+#### Scenario: Identificacion del AP en la tarjeta
+- **WHEN** la pagina principal muestra una tarjeta de AP
+- **THEN** el HTML SHALL renderizar el nombre monitoreado (`name`) y el valor de `host` de ese AP de forma claramente visible junto al estado y la grafica
 
 #### Scenario: AP estable en ultimas 72 horas
 - **WHEN** el AP no tiene snapshots `is_up = false` en ultimas 72 horas

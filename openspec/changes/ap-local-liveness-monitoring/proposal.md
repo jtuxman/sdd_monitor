@@ -12,6 +12,7 @@ El monitoreo basado en Meraki Dashboard puede tardar minutos en reflejar la caid
 - Historial de liveness de AP con graficas por rango temporal (`1h`, `1d`, `3d`, `7d`) para ver periodos sin respuesta
 - Indicador visual en la pagina principal cuando un AP perdio contacto en algun momento de las ultimas 72 horas
 - En la pagina principal, cada AP se muestra con su grafica de liveness visible por defecto en `3d`; al hacer click entra a vista individual (mismo patron de interaccion que switches)
+- Reporte HTML: en cada tarjeta (SNMP, error sin respuesta, AP liveness) mostrar el nombre monitoreado del dispositivo y la direccion configurada en `host` (IP o hostname)
 - Manejo de fallas de red por dispositivo sin detener ciclos futuros
 
 ## Capabilities
@@ -23,7 +24,7 @@ El monitoreo basado en Meraki Dashboard puede tardar minutos en reflejar la caid
 - `metric-storage`: Agregar persistencia de eventos/snapshots de disponibilidad para APs
 - `poll-scheduling`: Extender el ciclo periodico para ejecutar chequeos de liveness local de APs
 - `terminal-display`: Mostrar estado de APs (`up/down`), latencia y ultima vez visto en consola
-- `html-report`: Mostrar APs en home con grafica de liveness visible (default `3d`), mantener indicador de perdida reciente y soportar vista individual al click
+- `html-report`: Mostrar APs en home con grafica de liveness visible (default `3d`), mantener indicador de perdida reciente y soportar vista individual al click; en todas las tarjetas relevantes, mostrar nombre monitoreado (`name`) y direccion de monitoreo (`host`)
 
 ## Impact
 

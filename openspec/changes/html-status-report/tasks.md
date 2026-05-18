@@ -69,3 +69,12 @@
 - [x] 5.1 Añadir test para `collector.load_devices` con OIDs como strings, como objetos y mezclados
 - [x] 5.2 Añadir test para `Storage.query_recent` verificando orden, límite N y lista vacía
 - [x] 5.3 Añadir test para `html_report.generate` verificando que el archivo HTML se crea y contiene las secciones esperadas (nombre de dispositivo, canvas, meta refresh)
+
+## 10. Identificacion del dispositivo en tarjetas HTML (nombre + host)
+
+- [x] 10.1 En `html_report.generate()`, derivar un mapa `device_name -> host` desde la lista `devices` (campo `host` en cada entrada YAML) y pasarlo a los builders que arman cabeceras de tarjeta.
+- [x] 10.2 Actualizar `_build_device_card` para mostrar en la cabecera el nombre monitoreado y, de forma visible, el valor de `host` (p. ej. subtitulo o linea secundaria con clase CSS dedicada).
+- [x] 10.3 Actualizar `_build_error_card` para incluir el mismo par nombre + `host` cuando el dispositivo exista en el mapa de configuracion.
+- [x] 10.4 Actualizar `_build_liveness_cards` (o la firma y llamada desde `generate`) para que cada tarjeta de AP muestre nombre monitoreado y `host` alineado al mismo patron visual que las tarjetas SNMP.
+- [x] 10.5 Ajustar CSS embebido en `html_report.py` si hace falta para legibilidad del `host` (contraste, tamano, wrap).
+- [x] 10.6 Extender tests de `html_report` para comprobar que el HTML generado incluye el `host` escapado de al menos un dispositivo SNMP, un caso de tarjeta de error (si aplica en el fixture) y un AP con liveness (si el test cubre liveness).

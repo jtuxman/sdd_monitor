@@ -87,8 +87,32 @@ h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--border);
 }
-.device-icon { font-size: 1.75rem; line-height: 1; }
+.device-icon { font-size: 1.75rem; line-height: 1; flex-shrink: 0; }
+.device-id-block {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
 .device-name { font-size: 1.125rem; font-weight: 600; }
+.device-host {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'Menlo','Monaco',monospace;
+    font-weight: 400;
+    word-break: break-all;
+    line-height: 1.35;
+}
+.device-header-extra {
+    margin-left: auto;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.device-header-extra .error-badge,
+.device-header-extra .recent-down-badge { margin-left: 0; }
 .metrics-table {
     width: 100%;
     border-collapse: collapse;
@@ -259,6 +283,39 @@ h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
 _RANGE_LABELS = [r for r, _, _ in _RANGES]
 
 
+def _host_by_device(devices: list[dict]) -> dict[str, str]:
+    out: dict[str, str] = {}
+    for d in devices:
+        name = d.get("name")
+        host = d.get("host")
+        if not name or host is None or not str(host).strip():
+            continue
+        out[str(name)] = str(host).strip()
+    return out
+
+
+def _device_header_markup(
+    icon: str,
+    device_name: str,
+    host: str | None,
+    extra_html: str = "",
+) -> str:
+    host_html = ""
+    if host:
+        host_html = f'<span class="device-host">{_html.escape(host)}</span>'
+    extra = ""
+    if extra_html:
+        extra = f'<div class="device-header-extra">{extra_html}</div>'
+    return (
+        f'<span class="device-icon">{icon}</span>'
+        f'<div class="device-id-block">'
+        f'<span class="device-name">{_html.escape(device_name)}</span>'
+        f"{host_html}"
+        f"</div>"
+        f"{extra}"
+    )
+
+
 def _safe_id(s: str) -> str:
     return re.sub(r"[^a-zA-Z0-9]", "-", s)
 
@@ -409,6 +466,7 @@ def _build_liveness_cards(
     liveness: list[LivenessRecord],
     recent_down: dict[str, bool],
     liveness_ranges: dict[str, dict[str, tuple[list[str], list[int | None]]]],
+    host_by_device: dict[str, str],
 ) -> tuple[str, list[dict]]:
     if not liveness:
         return (
@@ -427,7 +485,12 @@ def _build_liveness_cards(
         https_label = "UP" if row.https_up else "DOWN"
         rtt = f"{row.ping_rtt_ms:.2f} ms" if row.ping_rtt_ms is not None else "-"
         ts = row.timestamp_utc.astimezone(_TZ_MX).strftime("%H:%M:%S UTC-6")
-        badge = '<span class="recent-down-badge">Caida en 72h</span>' if recent_down.get(row.device_name, False) else ""
+        badge = (
+            '<span class="recent-down-badge">Caida en 72h</span>'
+            if recent_down.get(row.device_name, False)
+            else ""
+        )
+        ap_host = host_by_device.get(row.device_name)
 
         chart_id = _safe_id(f"ap-live-{row.device_name}")
         ranges = liveness_ranges.get(row.device_name, {})
@@ -444,9 +507,10 @@ def _build_liveness_cards(
             f'data-chart-id="{chart_id}" data-range="{r}">{r}</button>'
             for r in _RANGE_LABELS
         )
+        header_inner = _device_header_markup("📶", row.device_name, ap_host, badge)
         cards += (
             f'    <section class="device-card ap-liveness-card" data-device="{safe_name}">\n'
-            f'      <div class="device-header"><span class="device-icon">📶</span><span class="device-name">{_html.escape(row.device_name)}</span>{badge}</div>\n'
+            f'      <div class="device-header">{header_inner}</div>\n'
             f'      <div class="ap-status-grid">\n'
             f'        <div class="ap-status-item"><span class="label">Estado</span><span class="value {status_cls}">{status_label}</span></div>\n'
             f'        <div class="ap-status-item"><span class="label">HTTPS 443</span><span class="value">{https_label}</span></div>\n'
@@ -614,16 +678,23 @@ def _build_html(
 </html>"""
 
 
-def _build_error_card(device_name: str, device_type: str | None, error_msg: str) -> str:
+def _build_error_card(
+    device_name: str,
+    device_type: str | None,
+    error_msg: str,
+    host: str | None = None,
+) -> str:
     icon = _ICONS.get(device_type or "", _DEFAULT_ICON)
     safe_name = _html.escape(device_name, quote=True)
+    header_inner = _device_header_markup(
+        icon,
+        device_name,
+        host,
+        '<span class="error-badge">Sin respuesta</span>',
+    )
     return (
         f'    <section class="device-card error-card" data-device="{safe_name}">\n'
-        f'      <div class="device-header">'
-        f'<span class="device-icon">{icon}</span>'
-        f'<span class="device-name">{_html.escape(device_name)}</span>'
-        f'<span class="error-badge">Sin respuesta</span>'
-        f"</div>\n"
+        f'      <div class="device-header">{header_inner}</div>\n'
         f'      <p class="error-msg">{_html.escape(error_msg)}</p>\n'
         f"    </section>\n"
     )
@@ -634,6 +705,7 @@ def _build_device_card(
     device_type: str | None,
     records: list[MetricRecord],
     range_data: dict[tuple[str, str], dict[str, tuple[list, list]]],
+    host: str | None = None,
 ) -> tuple[str, list[dict]]:
     icon = _ICONS.get(device_type or "", _DEFAULT_ICON)
     rows = ""
@@ -688,12 +760,10 @@ def _build_device_card(
             f'      <button class="iface-btn" data-device="{safe_name}">Ver interfaces</button>\n'
             f'      <div class="iface-result"></div>\n'
         )
+    header_inner = _device_header_markup(icon, device_name, host)
     card = (
         f'    <section class="device-card" data-device="{safe_name}">\n'
-        f'      <div class="device-header">'
-        f'<span class="device-icon">{icon}</span>'
-        f'<span class="device-name">{_html.escape(device_name)}</span>'
-        f"</div>\n"
+        f'      <div class="device-header">{header_inner}</div>\n'
         f'      <table class="metrics-table">\n'
         f"        <thead><tr><th>Métrica</th><th>Valor</th><th>Timestamp</th></tr></thead>\n"
         f"        <tbody>\n{rows}        </tbody>\n"
@@ -775,6 +845,7 @@ def generate(
     liveness = liveness or []
     try:
         type_map = {d["name"]: d.get("type") for d in devices}
+        host_map = _host_by_device(devices)
 
         by_device: dict[str, list[MetricRecord]] = defaultdict(list)
         for r in metrics:
@@ -808,15 +879,26 @@ def generate(
         all_charts: list[dict] = []
         for device_name, records in by_device.items():
             card, charts = _build_device_card(
-                device_name, type_map.get(device_name), records, range_data
+                device_name,
+                type_map.get(device_name),
+                records,
+                range_data,
+                host_map.get(device_name),
             )
             device_cards += card
             all_charts.extend(charts)
 
         for device_name, error_msg in errors.items():
-            device_cards += _build_error_card(device_name, type_map.get(device_name), error_msg)
+            device_cards += _build_error_card(
+                device_name,
+                type_map.get(device_name),
+                error_msg,
+                host_map.get(device_name),
+            )
 
-        liveness_cards, liveness_charts = _build_liveness_cards(liveness, recent_down, liveness_ranges)
+        liveness_cards, liveness_charts = _build_liveness_cards(
+            liveness, recent_down, liveness_ranges, host_map
+        )
         now_str = datetime.now(_TZ_MX).strftime("%Y-%m-%d %H:%M:%S UTC-6")
         html_content = _build_html(
             now_str, poll_interval, device_cards,

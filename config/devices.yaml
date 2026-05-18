@@ -452,12 +452,6 @@ devices:
     ip_local: 172.16.0.157
     liveness: true
     snmp_enabled: false
-  - name: "EN1-Dra. Lomeli / Dra. Rosestein"
-    type: ap                 # switch | router | server | firewall | ap
-    host: 172.16.0.103
-    ip_local: 172.16.0.103
-    liveness: true
-    snmp_enabled: false
   - name: "EN1-Dr. Darszon"
     type: ap                 # switch | router | server | firewall | ap
     host: 172.16.0.109

@@ -15,6 +15,7 @@ El cambio cruza multiples modulos (collector, scheduler, storage, presentation y
 - Mostrar grafica historica de liveness con los mismos rangos de tiempo de switches (`1h`, `1d`, `3d`, `7d`).
 - Mostrar en vista principal un marcador de "caida reciente" si hubo perdida de contacto en las ultimas 72 horas.
 - Mostrar en la pagina principal la grafica de liveness de cada AP con rango por defecto `3d`.
+- En el reporte HTML, mostrar en cada tarjeta (SNMP, error y AP liveness) el **nombre monitoreado** (`name` en `devices.yaml`) y la **direccion de monitoreo** (`host`, IP o hostname segun configuracion), alineado con la capacidad `html-report`.
 - Mantener el scheduler resiliente: fallas por AP no detienen ciclos futuros.
 
 **Non-Goals:**
@@ -60,6 +61,13 @@ El cambio cruza multiples modulos (collector, scheduler, storage, presentation y
 - Mantener home solo resumido: obliga a abrir detalle para cualquier inspeccion.
 - No mostrar indicador: reduce descubribilidad de incidentes intermitentes.
 
+### 8. Identificacion visible (nombre + host) en tarjetas HTML
+**Decision**: el HTML SHALL mostrar junto al titulo de cada tarjeta el nombre monitoreado (campo `name`) y, de forma claramente legible, el valor de `host` obtenido desde la lista de dispositivos ya cargada en el ciclo (`devices` pasado a `html_report.generate`). Aplica a: tarjetas SNMP, tarjetas de error de dispositivo sin respuesta, y tarjetas de liveness de AP (mismo patron visual: nombre + host en cabecera o subtitulo).
+**Rationale**: en operacion, la IP/host de poll es la clave para correlacionar con firewall, DHCP o inventario; el nombre solo no basta cuando hay varios equipos similares.
+**Alternatives considered**:
+- Mostrar solo `name`: mas compacto pero ambiguo ante nombres genericos o duplicados conceptuales.
+- Resolver DNS en caliente: innecesario; `host` en YAML es la fuente de verdad del monitor.
+
 ### 4. Integracion al scheduler en ruta no bloqueante del pipeline principal
 **Decision**: ejecutar liveness despues del collector SNMP y antes de presentation/html, capturando errores por AP para no romper el ciclo.
 **Rationale**: permite que la salida de terminal/HTML muestre en el mismo tick tanto metricas SNMP como salud de AP.
@@ -87,7 +95,8 @@ El cambio cruza multiples modulos (collector, scheduler, storage, presentation y
 3. Desplegar version nueva del monitor.
 4. Verificar en terminal y HTML la nueva seccion de APs.
 5. Verificar en HTML el badge de "caida reciente" y las graficas por rango en home y en vista enfocada.
-5. Rollback: deshabilitar `liveness` en dispositivos o regresar a version previa; el resto del pipeline SNMP permanece operativo.
+6. Verificar en HTML que cada tarjeta muestre nombre monitoreado y `host` (SNMP, error y AP liveness).
+7. Rollback: deshabilitar `liveness` en dispositivos o regresar a version previa; el resto del pipeline SNMP permanece operativo.
 
 ## Open Questions
 
